@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "connectomics_segmantation"
+version = "2023.0.0"
+authors = [
+    {name = "Oleh Shkalikov", email = "Oleh.Shkalikov@mailbox.tu-dresden.de"},
+]
+description = "Semantic segmentation of the connectomics volume with limited amount of labeled data"
+requires-python = "==3.10.8"
+dependencies = [
+    "torch==2.1.0",
+    "torchvision==0.16.0",
+    "lightning==2.1.0",
+    "torchmetrics==1.2.0",
+    "tensorboard==2.15.0",
+]
+license = {file = "LICENSE"}
+readme = "README.md"
+
+[tool.setuptools.packages.find]
+where = ["connectomics_segmentation"]
+namespaces = false
+
+[project.urls]
+Repository = "https://github.com/ShkalikovOleh/connectomics_segmentation"
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "flake8",
+    "isort"
+]
+
+[tool.isort]
+profile = "black"
