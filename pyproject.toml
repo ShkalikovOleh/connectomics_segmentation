@@ -16,6 +16,8 @@ dependencies = [
     "lightning==2.1.0",
     "torchmetrics==1.2.0",
     "tensorboard==2.15.0",
+    "tifffile==2023.9.26",
+    "patchify==0.2.3",
 ]
 license = {file = "LICENSE"}
 readme = "README.md"
@@ -31,7 +33,9 @@ Repository = "https://github.com/ShkalikovOleh/connectomics_segmentation"
 dev = [
     "black",
     "flake8",
-    "isort"
+    "isort",
+    "ipykernel",
+    "matplotlib"
 ]
 
 [tool.isort]
