@@ -113,9 +113,9 @@ class LabeledDataDatasetConfig:
 @dataclass
 class LabeledDataModuleConfig:
     batch_size: int
-    train_ds_config: list[LabeledDataDatasetConfig]
-    valid_ds_config: list[LabeledDataDatasetConfig]
-    test_ds_config: list[LabeledDataDatasetConfig]
+    train_ds_configs: list[LabeledDataDatasetConfig]
+    valid_ds_configs: list[LabeledDataDatasetConfig]
+    test_ds_configs: list[LabeledDataDatasetConfig]
     raw_data_path: str
     size_power: int = 6
     padding_mode: str = "constant"
@@ -151,28 +151,28 @@ class LabeledDataModule(LightningDataModule):
     def setup(self, stage: str) -> None:
         if stage == "fit":
             self.train_ds = LabeledDataModule.load_split(
-                self.cfg.train_ds_config,
+                self.cfg.train_ds_configs,
                 self.cfg.size_power,
                 self.cfg.padding_mode,
                 self.cfg.raw_data_path,
             )
         if stage == "validate" or stage == "fit":
             self.valid_ds = LabeledDataModule.load_split(
-                self.cfg.valid_ds_config,
+                self.cfg.valid_ds_configs,
                 self.cfg.size_power,
                 self.cfg.padding_mode,
                 self.cfg.raw_data_path,
             )
         elif stage == "test":
             self.test_ds = LabeledDataModule.load_split(
-                self.cfg.test_ds_config,
+                self.cfg.test_ds_configs,
                 self.cfg.size_power,
                 self.cfg.padding_mode,
                 self.cfg.raw_data_path,
             )
 
     def train_dataloader(self) -> DataLoader:
-        return DataLoader(self.train_ds, batch_size=self.cfg.batch_size)
+        return DataLoader(self.train_ds, batch_size=self.cfg.batch_size, shuffle=True)
 
     def val_dataloader(self) -> DataLoader:
         return DataLoader(self.valid_ds, batch_size=self.cfg.batch_size)
