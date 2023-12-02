@@ -164,3 +164,4 @@ dataset
 slurm_template.sh
 
 .vscode
+outputs

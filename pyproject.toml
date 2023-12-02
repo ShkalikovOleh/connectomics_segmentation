@@ -23,7 +23,7 @@ license = {file = "LICENSE"}
 readme = "README.md"
 
 [tool.setuptools.packages.find]
-where = ["connectomics_segmentation"]
+where = ["."]
 namespaces = false
 
 [project.urls]
