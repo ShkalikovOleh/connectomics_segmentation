@@ -1,2 +1,2 @@
 defaults:
-  - data/labeled_data
+  - data: labeled_data
