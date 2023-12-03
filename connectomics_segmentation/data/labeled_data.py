@@ -1,13 +1,13 @@
 import os
+from dataclasses import dataclass
 from typing import Tuple
-from attr import dataclass
 
 import numpy as np
 import tifffile
 import torch
 from lightning import LightningDataModule
 from patchify import patchify
-from torch.utils.data import DataLoader, Dataset, ConcatDataset
+from torch.utils.data import ConcatDataset, DataLoader, Dataset
 
 
 class LabeledDataset(Dataset):
@@ -119,6 +119,7 @@ class LabeledDataModuleConfig:
     raw_data_path: str
     size_power: int = 6
     padding_mode: str = "constant"
+    num_workers: int = 0
 
 
 class LabeledDataModule(LightningDataModule):
@@ -172,10 +173,23 @@ class LabeledDataModule(LightningDataModule):
             )
 
     def train_dataloader(self) -> DataLoader:
-        return DataLoader(self.train_ds, batch_size=self.cfg.batch_size, shuffle=True)
+        return DataLoader(
+            self.train_ds,
+            batch_size=self.cfg.batch_size,
+            shuffle=True,
+            num_workers=self.cfg.num_workers,
+        )
 
     def val_dataloader(self) -> DataLoader:
-        return DataLoader(self.valid_ds, batch_size=self.cfg.batch_size)
+        return DataLoader(
+            self.valid_ds,
+            batch_size=self.cfg.batch_size,
+            num_workers=self.cfg.num_workers,
+        )
 
     def test_dataloader(self) -> DataLoader:
-        return DataLoader(self.test_ds, batch_size=self.cfg.batch_size)
+        return DataLoader(
+            self.test_ds,
+            batch_size=self.cfg.batch_size,
+            num_workers=self.cfg.num_workers,
+        )

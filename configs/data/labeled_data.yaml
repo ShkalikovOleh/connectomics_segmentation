@@ -51,5 +51,5 @@ test_ds_configs:
     y_range: [1000, 1425]
     z_range: [1532, 1533]
 raw_data_path: "${oc.env:DATA_DIR}/raw_data/volumedata.tif"
-# size_power: 6
+size_power: 6
 padding_mode: "constant"

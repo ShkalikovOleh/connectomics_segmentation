@@ -1,0 +1,9 @@
+defaults:
+  - raw_data_config
+
+batch_size: 8
+raw_data_path: "${oc.env:DATA_DIR}/raw_data/volumedata.tif"
+size_power: 6
+apply_padding: True
+padding_mode: "symmetric"
+train_val_test_procents: [0.8, 0.1, 0.1]
