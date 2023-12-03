@@ -27,6 +27,7 @@ class RawDataset(Dataset):
 
         with tifffile.TiffFile(raw_data_path) as raw_data_tif:
             raw_data = raw_data_tif.asarray()
+            raw_data = (raw_data / 255).astype(np.float32)
 
             half_size = voxel_size // 2
             paddings = tuple((half_size, half_size - 1) for _ in range(3))
@@ -45,8 +46,10 @@ class RawDataset(Dataset):
     def __getitem__(self, idx: int) -> torch.Tensor:
         sx, sy, sz, _, _, _ = self.raw_data_batches.shape
         real_idx = np.unravel_index(idx, (sx, sy, sz))
+
         data = self.raw_data_batches[real_idx]
-        batch = torch.from_numpy(data)
+        batch = torch.from_numpy(data).unsqueeze(0)
+
         return batch
 
 
@@ -66,6 +69,8 @@ class RawDataModuleConfig:
 
 class RawDataModule(LightningDataModule):
     def __init__(self, cfg: RawDataModuleConfig) -> None:
+        super().__init__()
+
         assert (
             len(cfg.train_val_test_procents) == 3
             and math.isclose(sum(cfg.train_val_test_procents), 1) == 1

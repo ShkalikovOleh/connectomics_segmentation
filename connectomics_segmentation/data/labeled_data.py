@@ -1,13 +1,15 @@
 import os
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Any, Tuple
 
 import numpy as np
 import tifffile
 import torch
+from hydra.utils import instantiate
 from lightning import LightningDataModule
 from patchify import patchify
 from torch.utils.data import ConcatDataset, DataLoader, Dataset
+from volumentations import Compose
 
 
 class LabeledDataset(Dataset):
@@ -27,8 +29,11 @@ class LabeledDataset(Dataset):
         z_range: Tuple[int, int],
         size_power: int = 6,
         padding_mode: str = "constant",
+        transforms: Any = None,
     ) -> None:
         super().__init__()
+
+        self.transforms = transforms
 
         extent = np.array(
             [x_range[1] - x_range[0], y_range[1] - y_range[0], z_range[1] - z_range[0]],
@@ -66,6 +71,7 @@ class LabeledDataset(Dataset):
 
             # take only data for which we have labels
             raw_data = raw_data[tuple(slices)]
+            raw_data = (raw_data / 255).astype(np.float32)
 
             # pad if labeled data is on the edge of the whole data cube
             padded_raw_data = np.pad(
@@ -73,7 +79,8 @@ class LabeledDataset(Dataset):
             )
             del raw_data
 
-            self.raw_data_batches = patchify(padded_raw_data, batch_extent)
+            batches = patchify(padded_raw_data, batch_extent)
+            self.raw_data_batches = batches
 
         with tifffile.TiffFile(labels_path) as labels_tif:
             labels = labels_tif.asarray()
@@ -95,9 +102,12 @@ class LabeledDataset(Dataset):
         real_idx = np.unravel_index(idx, (sx, sy, sz))
 
         data = self.raw_data_batches[real_idx]
-        label = self.labels[real_idx]
+        label = self.labels[real_idx] - 1 if self.labels[real_idx] else 0
 
-        batch = {"data": torch.from_numpy(data), "label": label}
+        if self.transforms:
+            data = self.transforms(image=data)["image"]
+
+        batch = {"data": torch.from_numpy(data).unsqueeze(0), "label": label}
 
         return batch
 
@@ -108,6 +118,7 @@ class LabeledDataDatasetConfig:
     x_range: Tuple[int, int]
     y_range: Tuple[int, int]
     z_range: Tuple[int, int]
+    transforms: Any = None
 
 
 @dataclass
@@ -124,6 +135,7 @@ class LabeledDataModuleConfig:
 
 class LabeledDataModule(LightningDataModule):
     def __init__(self, cfg: LabeledDataModuleConfig) -> None:
+        super().__init__()
         self.cfg = cfg
 
     @classmethod
@@ -136,6 +148,10 @@ class LabeledDataModule(LightningDataModule):
     ) -> ConcatDataset:
         datasets = []
         for cfg in ds_cfgs:
+            transforms = cfg.transforms
+            if transforms:
+                transforms = Compose(instantiate(transforms))
+
             datasets.append(
                 LabeledDataset(
                     raw_data_path,
@@ -145,6 +161,7 @@ class LabeledDataModule(LightningDataModule):
                     cfg.z_range,
                     size_power,
                     padding_mode,
+                    transforms,
                 )
             )
         return ConcatDataset(datasets)
