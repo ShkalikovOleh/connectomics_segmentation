@@ -5,7 +5,7 @@
 #SBATCH --time=8:00:00
 #SBATCH --account=p_pixel
 #SBATCH --job-name=training
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:1
 #SBATCH --partition=alpha
 #SBATCH --mem=48G
 #SBATCH --cpus-per-task=16
