@@ -1,35 +1,19 @@
-defaults:
-  - labeled_data_config
-
-batch_size: 32
 train_ds_configs:
   -
     labels_path: ${paths.data_dir}/labeled_data/train/train_XY/tr_seg_XY.tif
     x_range: [200, 201]
     y_range: [200, 800]
     z_range: [510, 1110]
-    transforms:
-      - _target_: volumentations.RandomRotate90
-        p: 0.95
-      - _target_: volumentations.Flip
   -
     labels_path: ${paths.data_dir}/labeled_data/train/train_XZ/tr_seg_XZ.tif
     x_range: [150, 750]
     y_range: [510, 511]
     z_range: [510, 1110]
-    transforms:
-      - _target_: volumentations.RandomRotate90
-        p: 0.95
-      - _target_: volumentations.Flip
   -
     labels_path: ${paths.data_dir}/labeled_data/train/train_YZ/tr_seg_YZ.tif
     x_range: [150, 750]
     y_range: [200, 800]
     z_range: [595, 596]
-    transforms:
-      - _target_: volumentations.RandomRotate90
-        p: 0.95
-      - _target_: volumentations.Flip
 valid_ds_configs:
   -
     labels_path: ${paths.data_dir}/labeled_data/val/val_XY/val_seg_XY.tif
@@ -62,6 +46,12 @@ test_ds_configs:
     x_range: [350, 775]
     y_range: [1000, 1425]
     z_range: [1532, 1533]
-raw_data_path: "${paths.data_dir}/raw_data/volumedata.tif"
+raw_data_path: ${paths.data_dir}/raw_data/volumedata.tif
 size_power: 6
-padding_mode: "constant"
+batch_size: 32
+padding_mode: constant
+num_workers: 15
+augmentations:
+  - _target_: volumentations.RandomRotate90
+    p: 0.95
+  - _target_: volumentations.Flip

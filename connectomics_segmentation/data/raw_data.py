@@ -1,11 +1,11 @@
 import math
 import os
-from dataclasses import dataclass, field
 
 import numpy as np
 import tifffile
 import torch
 from lightning import LightningDataModule
+from omegaconf import DictConfig
 from patchify import patchify
 from torch.utils.data import DataLoader, Dataset
 
@@ -27,7 +27,6 @@ class RawDataset(Dataset):
 
         with tifffile.TiffFile(raw_data_path) as raw_data_tif:
             raw_data = raw_data_tif.asarray()
-            raw_data = (raw_data / 255).astype(np.float32)
 
             half_size = voxel_size // 2
             paddings = tuple((half_size, half_size - 1) for _ in range(3))
@@ -47,28 +46,14 @@ class RawDataset(Dataset):
         sx, sy, sz, _, _, _ = self.raw_data_batches.shape
         real_idx = np.unravel_index(idx, (sx, sy, sz))
 
-        data = self.raw_data_batches[real_idx]
+        data = (self.raw_data_batches[real_idx] / 255).astype(np.float32)
         batch = torch.from_numpy(data).unsqueeze(0)
 
         return batch
 
 
-@dataclass
-class RawDataModuleConfig:
-    batch_size: int
-    raw_data_path: str
-    size_power: int = 6
-    apply_padding: bool = True
-    padding_mode: str = "constant"
-    train_val_test_procents: list[float] = field(
-        default_factory=lambda: [0.8, 0.1, 0.1]
-    )
-    num_workers: int = 0
-    sampler_buffer_size: int = 1024
-
-
 class RawDataModule(LightningDataModule):
-    def __init__(self, cfg: RawDataModuleConfig) -> None:
+    def __init__(self, cfg: DictConfig) -> None:
         super().__init__()
 
         assert (

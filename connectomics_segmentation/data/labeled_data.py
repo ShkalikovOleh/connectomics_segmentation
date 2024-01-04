@@ -1,15 +1,14 @@
 import os
-from dataclasses import dataclass
 from typing import Any, Tuple
 
 import numpy as np
 import tifffile
 import torch
-from hydra.utils import instantiate
+import volumentations
 from lightning import LightningDataModule
+from omegaconf import DictConfig, ListConfig
 from patchify import patchify
 from torch.utils.data import ConcatDataset, DataLoader, Dataset
-from volumentations import Compose
 
 
 class LabeledDataset(Dataset):
@@ -88,7 +87,7 @@ class LabeledDataset(Dataset):
             labels = np.expand_dims(labels, zero_dim)
 
             assert np.array_equal(
-                extent, labels.shape
+                extent, labels.shape  # type: ignore
             ), "Provided ranges and the size of labels array should match"
 
             self.labels = np.where(labels == 0, 7, labels) - 1
@@ -112,46 +111,27 @@ class LabeledDataset(Dataset):
         return batch
 
 
-@dataclass
-class LabeledDataDatasetConfig:
-    labels_path: str
-    x_range: Tuple[int, int]
-    y_range: Tuple[int, int]
-    z_range: Tuple[int, int]
-    transforms: Any = None
-
-
-@dataclass
-class LabeledDataModuleConfig:
-    batch_size: int
-    train_ds_configs: list[LabeledDataDatasetConfig]
-    valid_ds_configs: list[LabeledDataDatasetConfig]
-    test_ds_configs: list[LabeledDataDatasetConfig]
-    raw_data_path: str
-    size_power: int = 6
-    padding_mode: str = "constant"
-    num_workers: int = 0
-
-
 class LabeledDataModule(LightningDataModule):
-    def __init__(self, cfg: LabeledDataModuleConfig) -> None:
+    def __init__(
+        self,
+        cfg: DictConfig,
+        transforms: list[volumentations.Transform] | None = None,
+    ) -> None:
         super().__init__()
         self.cfg = cfg
+        self.augmentations = transforms
 
     @classmethod
     def load_split(
         cls,
-        ds_cfgs: list[LabeledDataDatasetConfig],
+        transforms: volumentations.Compose | None,
+        ds_cfgs: ListConfig,
         size_power: int,
         padding_mode: str,
         raw_data_path: str | os.PathLike,
     ) -> ConcatDataset:
         datasets = []
         for cfg in ds_cfgs:
-            transforms = cfg.transforms
-            if transforms:
-                transforms = Compose(instantiate(transforms))
-
             datasets.append(
                 LabeledDataset(
                     raw_data_path,
@@ -168,7 +148,13 @@ class LabeledDataModule(LightningDataModule):
 
     def setup(self, stage: str) -> None:
         if stage == "fit":
+            if self.augmentations:
+                transforms = volumentations.Compose(self.augmentations)
+            else:
+                transforms = None
+
             self.train_ds = LabeledDataModule.load_split(
+                transforms,
                 self.cfg.train_ds_configs,
                 self.cfg.size_power,
                 self.cfg.padding_mode,
@@ -176,6 +162,7 @@ class LabeledDataModule(LightningDataModule):
             )
         if stage == "validate" or stage == "fit":
             self.valid_ds = LabeledDataModule.load_split(
+                None,
                 self.cfg.valid_ds_configs,
                 self.cfg.size_power,
                 self.cfg.padding_mode,
@@ -183,6 +170,7 @@ class LabeledDataModule(LightningDataModule):
             )
         elif stage == "test":
             self.test_ds = LabeledDataModule.load_split(
+                None,
                 self.cfg.test_ds_configs,
                 self.cfg.size_power,
                 self.cfg.padding_mode,
