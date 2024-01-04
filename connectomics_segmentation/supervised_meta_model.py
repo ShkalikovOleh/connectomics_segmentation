@@ -20,9 +20,10 @@ lr_sched_factory = Callable[
 class SupervisedMetaModel(LightningModule):
     def __init__(
         self,
-        model,
+        model: torch.nn.Module,
+        loss: torch.nn.Module,
         optimizer_factory: opt_factory,
-        num_classes: int = 7,
+        num_classes: int = 6,
         lr_scheduler_factory: lr_sched_factory | None = None,
         compile_model: bool = True,
     ) -> None:
@@ -33,7 +34,7 @@ class SupervisedMetaModel(LightningModule):
         self.lr_scheduler_factory = lr_scheduler_factory
         self.compile_model = compile_model
 
-        self.loss = torch.nn.CrossEntropyLoss()
+        self.loss = loss
 
         metrics = MetricCollection(
             [

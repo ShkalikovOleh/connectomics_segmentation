@@ -165,3 +165,4 @@ slurm_template.sh
 
 .vscode
 outputs
+logs

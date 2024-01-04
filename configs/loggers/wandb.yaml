@@ -1,0 +1,12 @@
+wandb:
+  _target_: lightning.pytorch.loggers.wandb.WandbLogger
+  save_dir: "${paths.output_dir}"
+  offline: False
+  id: null
+  anonymous: null
+  project: "connectomics_segmentation"
+  log_model: False
+  prefix: ""
+  group: ""
+  tags: []
+  job_type: ""

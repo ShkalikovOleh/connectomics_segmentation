@@ -1,55 +1,67 @@
 defaults:
   - labeled_data_config
 
-batch_size: 8
+batch_size: 32
 train_ds_configs:
   -
-    labels_path: ${oc.env:DATA_DIR}/labeled_data/train/train_XY/tr_seg_XY.tif
+    labels_path: ${paths.data_dir}/labeled_data/train/train_XY/tr_seg_XY.tif
     x_range: [200, 201]
     y_range: [200, 800]
     z_range: [510, 1110]
+    transforms:
+      - _target_: volumentations.RandomRotate90
+        p: 0.95
+      - _target_: volumentations.Flip
   -
-    labels_path: ${oc.env:DATA_DIR}/labeled_data/train/train_XZ/tr_seg_XZ.tif
+    labels_path: ${paths.data_dir}/labeled_data/train/train_XZ/tr_seg_XZ.tif
     x_range: [150, 750]
     y_range: [510, 511]
     z_range: [510, 1110]
+    transforms:
+      - _target_: volumentations.RandomRotate90
+        p: 0.95
+      - _target_: volumentations.Flip
   -
-    labels_path: ${oc.env:DATA_DIR}/labeled_data/train/train_YZ/tr_seg_YZ.tif
+    labels_path: ${paths.data_dir}/labeled_data/train/train_YZ/tr_seg_YZ.tif
     x_range: [150, 750]
     y_range: [200, 800]
     z_range: [595, 596]
+    transforms:
+      - _target_: volumentations.RandomRotate90
+        p: 0.95
+      - _target_: volumentations.Flip
 valid_ds_configs:
   -
-    labels_path: ${oc.env:DATA_DIR}/labeled_data/val/val_XY/val_seg_XY.tif
+    labels_path: ${paths.data_dir}/labeled_data/val/val_XY/val_seg_XY.tif
     x_range: [320, 321]
     y_range: [1000, 1425]
     z_range: [675, 1100]
   -
-    labels_path: ${oc.env:DATA_DIR}/labeled_data/val/val_XZ/val_seg_XZ.tif
+    labels_path: ${paths.data_dir}/labeled_data/val/val_XZ/val_seg_XZ.tif
     x_range: [200, 625]
     y_range: [1140, 1141]
     z_range: [675, 1100]
   -
-    labels_path: ${oc.env:DATA_DIR}/labeled_data/val/val_YZ/val_seg_YZ.tif
+    labels_path: ${paths.data_dir}/labeled_data/val/val_YZ/val_seg_YZ.tif
     x_range: [200, 625]
     y_range: [1000, 1425]
     z_range: [985, 986]
 test_ds_configs:
   -
-    labels_path: ${oc.env:DATA_DIR}/labeled_data/test/test_XY/test_orig_XY.tif # someone confuse filenames
+    labels_path: ${paths.data_dir}/labeled_data/test/test_XY/test_orig_XY.tif # someone confuse filenames
     x_range: [650, 651]
     y_range: [1000, 1425]
     z_range: [1325, 1750]
   -
-    labels_path: ${oc.env:DATA_DIR}/labeled_data/test/test_XZ/test_seg_XZ.tif
+    labels_path: ${paths.data_dir}/labeled_data/test/test_XZ/test_seg_XZ.tif
     x_range: [350, 775]
     y_range: [1100, 1101]
     z_range: [1325, 1750]
   -
-    labels_path: ${oc.env:DATA_DIR}/labeled_data/test/test_YZ/test_seg_YZ.tif
+    labels_path: ${paths.data_dir}/labeled_data/test/test_YZ/test_seg_YZ.tif
     x_range: [350, 775]
     y_range: [1000, 1425]
     z_range: [1532, 1533]
-raw_data_path: "${oc.env:DATA_DIR}/raw_data/volumedata.tif"
+raw_data_path: "${paths.data_dir}/raw_data/volumedata.tif"
 size_power: 6
 padding_mode: "constant"
