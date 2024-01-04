@@ -3,7 +3,7 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "connectomics_segmantation"
+name = "connectomics_segmentation"
 version = "2024.0.1"
 authors = [
     {name = "Oleh Shkalikov", email = "Oleh.Shkalikov@mailbox.tu-dresden.de"},
