@@ -166,3 +166,4 @@ slurm_template.sh
 .vscode
 outputs
 logs
+scripts/config_local.sh
