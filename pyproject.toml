@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "connectomics_segmantation"
-version = "2023.0.0"
+version = "2024.0.1"
 authors = [
     {name = "Oleh Shkalikov", email = "Oleh.Shkalikov@mailbox.tu-dresden.de"},
 ]
@@ -16,6 +16,7 @@ dependencies = [
     "lightning==2.1.0",
     "torchmetrics==1.2.0",
     "tensorboard==2.15.0",
+    "wandb==0.16.1",
     "tifffile==2023.9.26",
     "patchify==0.2.3",
     "volumentations-3D==1.0.4"
