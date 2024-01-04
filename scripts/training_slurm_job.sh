@@ -13,8 +13,8 @@
 #SBATCH --signal=SIGUSR1@90
 
 module switch release/23.04
-module load GCCcore/11.3.0
-module load Python/3.10.4
+module load GCCcore/12.2.0
+module load Python/3.10.8
 module load CUDA/11.8.0
 
 nvidia-smi
