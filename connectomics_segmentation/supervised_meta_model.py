@@ -7,6 +7,7 @@ from torchmetrics.classification import (
     MulticlassAccuracy,
     MulticlassAveragePrecision,
     MulticlassCohenKappa,
+    MulticlassF1Score,
     MulticlassPrecision,
     MulticlassRecall,
 )
@@ -38,11 +39,14 @@ class SupervisedMetaModel(LightningModule):
 
         metrics = MetricCollection(
             [
-                MulticlassAccuracy(num_classes=num_classes),
-                MulticlassPrecision(num_classes=num_classes),
-                MulticlassCohenKappa(num_classes=num_classes),
-                MulticlassRecall(num_classes=num_classes),
-                MulticlassAveragePrecision(num_classes=num_classes),
+                MulticlassAccuracy(num_classes=num_classes, ignore_index=num_classes),
+                MulticlassPrecision(num_classes=num_classes, ignore_index=num_classes),
+                MulticlassRecall(num_classes=num_classes, ignore_index=num_classes),
+                MulticlassF1Score(num_classes=num_classes, ignore_index=num_classes),
+                MulticlassCohenKappa(num_classes=num_classes, ignore_index=num_classes),
+                MulticlassAveragePrecision(
+                    num_classes=num_classes, ignore_index=num_classes
+                ),
             ]
         )
         self.train_metrics = metrics.clone("train/")

@@ -91,7 +91,7 @@ class LabeledDataset(Dataset):
                 extent, labels.shape
             ), "Provided ranges and the size of labels array should match"
 
-            self.labels = labels
+            self.labels = np.where(labels == 0, 7, labels) - 1
 
     def __len__(self) -> int:
         sx, sy, sz, _, _, _ = self.raw_data_batches.shape
@@ -102,7 +102,7 @@ class LabeledDataset(Dataset):
         real_idx = np.unravel_index(idx, (sx, sy, sz))
 
         data = self.raw_data_batches[real_idx]
-        label = self.labels[real_idx] - 1 if self.labels[real_idx] else 0
+        label = self.labels[real_idx]
 
         if self.transforms:
             data = self.transforms(image=data)["image"]
