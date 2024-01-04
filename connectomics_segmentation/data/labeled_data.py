@@ -10,6 +10,10 @@ from omegaconf import DictConfig, ListConfig
 from patchify import patchify
 from torch.utils.data import ConcatDataset, DataLoader, Dataset
 
+from connectomics_segmentation.utils.pylogger import RankedLogger
+
+log = RankedLogger(__name__, rank_zero_only=True)
+
 
 class LabeledDataset(Dataset):
     """Dataset which contains batches of the raw data of the size of the power of 2
@@ -77,10 +81,12 @@ class LabeledDataset(Dataset):
                 raw_data, pad_width=paddings, mode=padding_mode  # type: ignore
             )
             del raw_data
+            log.info(f"Add padding {paddings} to raw data for {labels_path}")
 
             batches = patchify(padded_raw_data, batch_extent)
             self.raw_data_batches = batches
 
+        log.info(f"Loading {labels_path} file with labels")
         with tifffile.TiffFile(labels_path) as labels_tif:
             labels = labels_tif.asarray()
             zero_dim = np.argmin(extent)
@@ -147,6 +153,8 @@ class LabeledDataModule(LightningDataModule):
         return ConcatDataset(datasets)
 
     def setup(self, stage: str) -> None:
+        log.info(f"Setup datamodule for {stage} stage")
+
         if stage == "fit":
             if self.augmentations:
                 transforms = volumentations.Compose(self.augmentations)

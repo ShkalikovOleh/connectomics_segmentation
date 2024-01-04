@@ -9,7 +9,11 @@ from omegaconf import DictConfig
 from patchify import patchify
 from torch.utils.data import DataLoader, Dataset
 
+from connectomics_segmentation.utils.pylogger import RankedLogger
+
 from .subdataset import BufferizedRandomSampler, SubDataset
+
+log = RankedLogger(__name__, rank_zero_only=True)
 
 
 class RawDataset(Dataset):
@@ -27,6 +31,7 @@ class RawDataset(Dataset):
 
         with tifffile.TiffFile(raw_data_path) as raw_data_tif:
             raw_data = raw_data_tif.asarray()
+            log.info("Load raw data")
 
             half_size = voxel_size // 2
             paddings = tuple((half_size, half_size - 1) for _ in range(3))
@@ -35,8 +40,10 @@ class RawDataset(Dataset):
                 raw_data = np.pad(
                     raw_data, pad_width=paddings, mode=padding_mode  # type: ignore
                 )
+                log.info("Add padding to raw data")
 
             self.raw_data_batches = patchify(raw_data, batch_extent)
+            log.info("Split raw data into patches")
 
     def __len__(self) -> int:
         sx, sy, sz, _, _, _ = self.raw_data_batches.shape
@@ -64,6 +71,8 @@ class RawDataModule(LightningDataModule):
         self.cfg = cfg
 
     def setup(self, stage: str) -> None:
+        log.info(f"Setup datamodule for {stage} stage")
+
         if hasattr(self, "train_ds"):
             return
 

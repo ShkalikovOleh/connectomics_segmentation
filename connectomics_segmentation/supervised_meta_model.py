@@ -30,6 +30,7 @@ class SupervisedMetaModel(LightningModule):
     ) -> None:
         super().__init__()
 
+        self.num_classes = num_classes
         self.model = model
         self.optimizer_factory = optimizer_factory
         self.lr_scheduler_factory = lr_scheduler_factory
@@ -88,8 +89,9 @@ class SupervisedMetaModel(LightningModule):
         loss = self.loss(preds, target)
         self.log("train/loss", loss)
 
-        self.train_metrics(preds, target)
-        self.log_dict(self.train_metrics, on_step=True, on_epoch=False)
+        if not torch.all(target == self.num_classes):
+            self.train_metrics(preds, target)
+            self.log_dict(self.train_metrics, on_step=True, on_epoch=False)
 
         return loss
 
@@ -100,12 +102,14 @@ class SupervisedMetaModel(LightningModule):
         loss = self.loss(preds, target)
         self.log("val/loss", loss, on_epoch=True, on_step=False)
 
-        self.valid_metrics(preds, target)
-        self.log_dict(self.valid_metrics, on_epoch=True, on_step=False)
+        if not torch.all(target == self.num_classes):
+            self.valid_metrics(preds, target)
+            self.log_dict(self.valid_metrics, on_epoch=True, on_step=False)
 
     def test_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> None:
         preds = self.model(batch["data"])
         target = batch["label"]
 
-        self.test_metrics(preds, target)
-        self.log_dict(self.test_metrics, on_epoch=True, on_step=False)
+        if not torch.all(target == self.num_classes):
+            self.test_metrics(preds, target)
+            self.log_dict(self.test_metrics, on_epoch=True, on_step=False)
