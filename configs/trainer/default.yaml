@@ -1,0 +1,7 @@
+_target_: lightning.Trainer
+# fast_dev_run: True
+max_epochs: 200
+# limit_train_batches: 1
+# limit_val_batches: 1
+# limit_test_batches: 1
+# log_every_n_steps: 1

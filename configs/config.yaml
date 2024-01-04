@@ -1,2 +1,21 @@
 defaults:
   - data: labeled_data
+  # - data: raw_data
+  - model: supervised_simple
+  - loggers: default
+  - trainer: default
+  - paths: default
+  - hydra: default
+  - callbacks: default
+  - _self_
+
+task_name: train
+supervised: True
+# supervised: False
+run_test: False
+# run_test: True
+ckpt_path: null  # checkpoint path to resume training
+seed: null
+
+# model:
+#   compile_model: False
