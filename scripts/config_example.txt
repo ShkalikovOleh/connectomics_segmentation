@@ -1,0 +1,4 @@
+WORKSPACE=path_to_workspace
+DATA_DIR=path_to_dataset_dir
+VENV_DIR=path_to_python_virtual_env
+WANDB_API_KEY=api_key_for_wandb

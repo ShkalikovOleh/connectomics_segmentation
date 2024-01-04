@@ -1,7 +1,7 @@
 defaults:
   - data: labeled_data
   # - data: raw_data
-  - model: supervised_simple
+  - model: default
   - loggers: default
   - trainer: default
   - paths: default
