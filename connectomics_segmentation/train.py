@@ -29,10 +29,6 @@ def main(cfg: DictConfig) -> None:
     log.info("Instantiate loggers")
     loggers = instantiate_loggers(cfg.loggers)
 
-    log.info("Instantiate model")
-    backbone_model = instantiate(cfg.model.backbone)
-    head_model = instantiate(cfg.model.head)
-
     log.info("Instantiate loss")
     loss = instantiate(cfg.model.loss)
 
@@ -47,6 +43,10 @@ def main(cfg: DictConfig) -> None:
     torch.set_float32_matmul_precision("high")
 
     if cfg.supervised:
+        log.info("Instantiate model")
+        backbone_model = instantiate(cfg.model.supervised.backbone)
+        head_model = instantiate(cfg.model.supervised.head)
+
         module = SupervisedMetaModel(
             backbone_model=backbone_model,
             head_model=head_model,

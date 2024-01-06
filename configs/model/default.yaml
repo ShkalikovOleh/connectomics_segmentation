@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - supervised_simple
+  - supervised/dialated_conv_2_layer
 
 num_classes: 6
 compile_model: True
