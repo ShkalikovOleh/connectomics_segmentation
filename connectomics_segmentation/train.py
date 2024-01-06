@@ -1,5 +1,6 @@
 import hydra
 import lightning as L
+import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
@@ -41,6 +42,8 @@ def main(cfg: DictConfig) -> None:
         sched_factory = instantiate(cfg.model.lr_scheduler)
     else:
         sched_factory = None
+
+    torch.set_float32_matmul_precision("high")
 
     if cfg.supervised:
         module = SupervisedMetaModel(
