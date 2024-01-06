@@ -1,4 +1,4 @@
-net:
+backbone:
   _target_: torch.nn.Sequential
   _args_:
     - _target_: connectomics_segmentation.models.modules.Conv3DBlock
@@ -12,7 +12,11 @@ net:
         out_features: 5
         kernel_size: 3
         padding: 1
-    - _target_: torch.nn.Flatten
-    - _target_: torch.nn.Linear
-      in_features: 1191640
-      out_features: ${model.num_classes}
+
+head:
+  _target_: torch.nn.Sequential
+  _args_:
+  - _target_: torch.nn.Flatten
+  - _target_: torch.nn.Linear
+    in_features: 1191640
+    out_features: ${model.num_classes}

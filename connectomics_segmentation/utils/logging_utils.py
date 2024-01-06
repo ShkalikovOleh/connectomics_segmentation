@@ -25,7 +25,8 @@ def log_hyperparameters(object_dict: Dict[str, Any]) -> None:
     hparams = {}
 
     cfg = OmegaConf.to_container(object_dict["cfg"])
-    model = object_dict["model"]
+    backbone_model = object_dict["backbone_model"]
+    head_model = object_dict["head_model"]
     trainer = object_dict["trainer"]
 
     if not trainer.logger:
@@ -35,12 +36,21 @@ def log_hyperparameters(object_dict: Dict[str, Any]) -> None:
     hparams["model"] = cfg["model"]  # type: ignore
 
     # save number of model parameters
-    hparams["model/params/total"] = sum(p.numel() for p in model.parameters())
-    hparams["model/params/trainable"] = sum(
-        p.numel() for p in model.parameters() if p.requires_grad
+    hparams["model/backbone/params/total"] = sum(
+        p.numel() for p in backbone_model.parameters()
     )
-    hparams["model/params/non_trainable"] = sum(
-        p.numel() for p in model.parameters() if not p.requires_grad
+    hparams["model/backbone/params/trainable"] = sum(
+        p.numel() for p in backbone_model.parameters() if p.requires_grad
+    )
+    hparams["model/backbone/params/non_trainable"] = sum(
+        p.numel() for p in backbone_model.parameters() if not p.requires_grad
+    )
+    hparams["model/head/params/total"] = sum(p.numel() for p in head_model.parameters())
+    hparams["model/head/params/trainable"] = sum(
+        p.numel() for p in head_model.parameters() if p.requires_grad
+    )
+    hparams["model/head/params/non_trainable"] = sum(
+        p.numel() for p in head_model.parameters() if not p.requires_grad
     )
 
     hparams["data"] = cfg["data"]  # type: ignore

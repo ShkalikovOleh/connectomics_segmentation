@@ -30,7 +30,8 @@ def main(cfg: DictConfig) -> None:
     loggers = instantiate_loggers(cfg.loggers)
 
     log.info("Instantiate model")
-    net = instantiate(cfg.model.net)
+    backbone_model = instantiate(cfg.model.backbone)
+    head_model = instantiate(cfg.model.head)
 
     log.info("Instantiate loss")
     loss = instantiate(cfg.model.loss)
@@ -47,7 +48,8 @@ def main(cfg: DictConfig) -> None:
 
     if cfg.supervised:
         module = SupervisedMetaModel(
-            model=net,
+            backbone_model=backbone_model,
+            head_model=head_model,
             loss=loss,
             optimizer_factory=optim_factory,
             num_classes=cfg.model.num_classes,
@@ -74,7 +76,8 @@ def main(cfg: DictConfig) -> None:
     log.info("Logging hyperparameters")
     hparams = {
         "cfg": cfg,
-        "model": net,
+        "backbone_model": backbone_model,
+        "head_model": head_model,
         "trainer": trainer,
     }
     log_hyperparameters(hparams)
