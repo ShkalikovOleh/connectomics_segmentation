@@ -57,12 +57,12 @@ def main(cfg: DictConfig) -> None:
 
         if cfg.data.get("augmentations"):
             log.info("Instantiate augmentations")
-            augm_factory = instantiate(cfg.data.augmentations)
+            augmentations = instantiate(cfg.data.augmentations)
         else:
-            augm_factory = None
+            augmentations = None
 
         log.info("Create labeled data module")
-        dm = LabeledDataModule(cfg.data, augm_factory)
+        dm = LabeledDataModule(cfg.data, augmentations)
     else:
         log.info("Create raw data module")
         dm = RawDataModule(cfg.data)
