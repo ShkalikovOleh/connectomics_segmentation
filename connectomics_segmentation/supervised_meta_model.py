@@ -3,7 +3,7 @@ from typing import Any, Callable, Iterator
 
 import torch
 from lightning.pytorch import LightningModule
-from torchmetrics import MetricCollection
+from torchmetrics import MetricCollection, ClasswiseWrapper
 from torchmetrics.classification import (
     MulticlassAccuracy,
     MulticlassAveragePrecision,
@@ -27,8 +27,10 @@ class SupervisedMetaModel(LightningModule):
         loss: torch.nn.Module,
         optimizer_factory: opt_factory,
         num_classes: int = 6,
+        class_names: list[str] = None,
         lr_scheduler_factory: lr_sched_factory | None = None,
         compile_model: bool = True,
+        log_train_metrics: bool = True,
     ) -> None:
         super().__init__()
 
@@ -38,24 +40,51 @@ class SupervisedMetaModel(LightningModule):
         self.optimizer_factory = optimizer_factory
         self.lr_scheduler_factory = lr_scheduler_factory
         self.compile_model = compile_model
+        self.log_train_metrics = log_train_metrics
 
         self.loss = loss
 
-        metrics = MetricCollection(
-            [
-                MulticlassAccuracy(num_classes=num_classes, ignore_index=num_classes),
-                MulticlassPrecision(num_classes=num_classes, ignore_index=num_classes),
-                MulticlassRecall(num_classes=num_classes, ignore_index=num_classes),
-                MulticlassF1Score(num_classes=num_classes, ignore_index=num_classes),
-                MulticlassCohenKappa(num_classes=num_classes, ignore_index=num_classes),
-                MulticlassAveragePrecision(
-                    num_classes=num_classes, ignore_index=num_classes
-                ),
-            ]
-        )
-        self.train_metrics = metrics.clone("train/")
+        metrics = self.create_metrics(num_classes, class_names)
+        if log_train_metrics:
+            self.train_metrics = metrics.clone("train/")
         self.valid_metrics = metrics.clone("val/")
         self.test_metrics = metrics.clone("test/")
+
+    @staticmethod
+    def create_metrics(num_classes: int, class_names: list[str]) -> MetricCollection:
+        overall_metrics_kwargs = {
+            "num_classes": num_classes,
+            "ignore_index": num_classes,
+        }
+        classwise_metrics_kwargs = {
+            "num_classes": num_classes,
+            "ignore_index": num_classes,
+            "average": None,
+        }
+        metrics = MetricCollection(
+            {
+                "overall_accuracy": MulticlassAccuracy(**overall_metrics_kwargs),  # type: ignore # noqa
+                "overall_precision": MulticlassPrecision(**overall_metrics_kwargs),  # type: ignore # noqa
+                "overall_recall": MulticlassRecall(**overall_metrics_kwargs),  # type: ignore # noqa
+                "overall_f1": MulticlassF1Score(**overall_metrics_kwargs),  # type: ignore # noqa
+                "overall_cohen_kappa": MulticlassCohenKappa(**overall_metrics_kwargs),  # type: ignore # noqa
+                "overall_ap": MulticlassAveragePrecision(**overall_metrics_kwargs),  # type: ignore # noqa
+                "classwise_accuracy": ClasswiseWrapper(
+                    MulticlassAccuracy(**classwise_metrics_kwargs), class_names
+                ),
+                "classwise_precision": ClasswiseWrapper(
+                    MulticlassPrecision(**classwise_metrics_kwargs), class_names
+                ),
+                "classwise_recall": ClasswiseWrapper(
+                    MulticlassRecall(**classwise_metrics_kwargs), class_names
+                ),
+                "classwise_f1": ClasswiseWrapper(
+                    MulticlassF1Score(**classwise_metrics_kwargs), class_names
+                ),
+            }
+        )
+
+        return metrics
 
     def setup(self, stage: str) -> None:
         if self.compile_model and stage == "fit":
@@ -96,11 +125,15 @@ class SupervisedMetaModel(LightningModule):
         loss = self.loss(preds, target)
         self.log("train/loss", loss)
 
-        if not torch.all(target == self.num_classes):
-            self.train_metrics(preds, target)
-            self.log_dict(self.train_metrics, on_step=True, on_epoch=False)
+        if self.log_train_metrics and not torch.all(target == self.num_classes):
+            metrics = self.train_metrics(preds, target)
+            self.log_dict(metrics)
 
         return loss
+
+    def on_train_epoch_end(self) -> None:
+        if self.log_train_metrics:
+            self.train_metrics.reset()
 
     def validation_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> None:
         preds = self.forward(batch["data"])
@@ -110,13 +143,19 @@ class SupervisedMetaModel(LightningModule):
         self.log("val/loss", loss, on_epoch=True, on_step=False)
 
         if not torch.all(target == self.num_classes):
-            self.valid_metrics(preds, target)
-            self.log_dict(self.valid_metrics, on_epoch=True, on_step=False)
+            self.valid_metrics.update(preds, target)
+
+    def on_validation_epoch_end(self) -> None:
+        self.log_dict(self.valid_metrics.compute())
+        self.valid_metrics.reset()
 
     def test_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> None:
         preds = self.forward(batch["data"])
         target = batch["label"]
 
         if not torch.all(target == self.num_classes):
-            self.test_metrics(preds, target)
-            self.log_dict(self.test_metrics, on_epoch=True, on_step=False)
+            self.test_metrics.update(preds, target)
+
+    def on_test_epoch_end(self) -> None:
+        self.log_dict(self.test_metrics.compute())
+        self.test_metrics.reset()

@@ -46,11 +46,20 @@ test_ds_configs:
     x_range: [350, 775]
     y_range: [1000, 1425]
     z_range: [1532, 1533]
+
 raw_data_path: ${paths.data_dir}/raw_data/volumedata.tif
 size_power: 6
-batch_size: 32
+batch_size: 64
 padding_mode: constant
 num_workers: 15
+class_names:
+  - intra_cellular_space
+  - cellular_membrane
+  - intra_mitochondrial_space
+  - mitochondrial_membrane
+  - synapse
+  - vesicle
+
 augmentations:
   - _target_: volumentations.RandomRotate90
     p: 0.95

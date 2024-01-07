@@ -2,7 +2,7 @@ import hydra
 import lightning as L
 import torch
 from hydra.utils import instantiate
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 from connectomics_segmentation.data.labeled_data import LabeledDataModule
 from connectomics_segmentation.data.raw_data import RawDataModule
@@ -54,6 +54,7 @@ def main(cfg: DictConfig) -> None:
             optimizer_factory=optim_factory,
             num_classes=cfg.model.num_classes,
             lr_scheduler_factory=sched_factory,
+            class_names=OmegaConf.to_object(cfg.data.class_names),  # type: ignore
             compile_model=cfg.model.compile_model,
         )
 
