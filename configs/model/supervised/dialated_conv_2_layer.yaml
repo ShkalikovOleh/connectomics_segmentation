@@ -5,7 +5,11 @@ backbone:
       in_features: 1
       out_features: 16
       kernel_size: 3
+    - _target_: torch.nn.MaxPool3d
+      kernel_size: 2
+      stride: 2
     - _target_: connectomics_segmentation.models.modules.ResidualModule
+      op: concat
       main_module:
         _target_: torch.nn.Sequential
         _args_:
@@ -27,11 +31,14 @@ backbone:
         dilation: 3
         activation: ""
         norm: ""
+    - _target_: torch.nn.AvgPool3d
+      kernel_size: 2
+      stride: 2
 
 head:
   _target_: torch.nn.Sequential
   _args_:
   - _target_: torch.nn.Flatten
   - _target_: torch.nn.Linear
-    in_features: 4000000
+    in_features: 46656
     out_features: ${model.num_classes}
