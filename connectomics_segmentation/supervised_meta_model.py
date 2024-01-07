@@ -27,7 +27,7 @@ class SupervisedMetaModel(LightningModule):
         loss: torch.nn.Module,
         optimizer_factory: opt_factory,
         num_classes: int = 6,
-        class_names: list[str] = None,
+        class_names: list[str] | None = None,
         lr_scheduler_factory: lr_sched_factory | None = None,
         compile_model: bool = True,
         log_train_metrics: bool = True,
@@ -41,6 +41,8 @@ class SupervisedMetaModel(LightningModule):
         self.lr_scheduler_factory = lr_scheduler_factory
         self.compile_model = compile_model
         self.log_train_metrics = log_train_metrics
+        self.log_valid_metrics = False
+        self.log_test_metrics = False
 
         self.loss = loss
 
@@ -51,7 +53,9 @@ class SupervisedMetaModel(LightningModule):
         self.test_metrics = metrics.clone("test/")
 
     @staticmethod
-    def create_metrics(num_classes: int, class_names: list[str]) -> MetricCollection:
+    def create_metrics(
+        num_classes: int, class_names: list[str] | None
+    ) -> MetricCollection:
         overall_metrics_kwargs = {
             "num_classes": num_classes,
             "ignore_index": num_classes,
@@ -143,10 +147,12 @@ class SupervisedMetaModel(LightningModule):
         self.log("val/loss", loss, on_epoch=True, on_step=False)
 
         if not torch.all(target == self.num_classes):
+            self.log_valid_metrics = True
             self.valid_metrics.update(preds, target)
 
     def on_validation_epoch_end(self) -> None:
-        self.log_dict(self.valid_metrics.compute())
+        if self.log_valid_metrics:
+            self.log_dict(self.valid_metrics.compute())
         self.valid_metrics.reset()
 
     def test_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> None:
@@ -154,8 +160,10 @@ class SupervisedMetaModel(LightningModule):
         target = batch["label"]
 
         if not torch.all(target == self.num_classes):
+            self.log_test_metrics = True
             self.test_metrics.update(preds, target)
 
     def on_test_epoch_end(self) -> None:
-        self.log_dict(self.test_metrics.compute())
+        if self.log_test_metrics:
+            self.log_dict(self.test_metrics.compute())
         self.test_metrics.reset()
