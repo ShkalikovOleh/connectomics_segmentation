@@ -5,4 +5,4 @@ default_root_dir: ${paths.output_dir}
 min_epochs: 10
 max_epochs: 200
 
-precision: 16
+# precision: 16

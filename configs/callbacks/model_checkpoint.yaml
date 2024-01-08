@@ -4,7 +4,7 @@ model_checkpoint:
   _target_: lightning.pytorch.callbacks.ModelCheckpoint
   dirpath: ${paths.output_dir}/checkpoints
   filename: "epoch_{epoch:03d}"
-  monitor: "val/MulticlassF1Score"
+  monitor: "val/AP_overall"
   mode: "max"
   save_last: True
   auto_insert_metric_name: False

@@ -67,23 +67,31 @@ class SupervisedMetaModel(LightningModule):
         }
         metrics = MetricCollection(
             {
-                "overall_accuracy": MulticlassAccuracy(**overall_metrics_kwargs),  # type: ignore # noqa
-                "overall_precision": MulticlassPrecision(**overall_metrics_kwargs),  # type: ignore # noqa
-                "overall_recall": MulticlassRecall(**overall_metrics_kwargs),  # type: ignore # noqa
-                "overall_f1": MulticlassF1Score(**overall_metrics_kwargs),  # type: ignore # noqa
-                "overall_cohen_kappa": MulticlassCohenKappa(**overall_metrics_kwargs),  # type: ignore # noqa
-                "overall_ap": MulticlassAveragePrecision(**overall_metrics_kwargs),  # type: ignore # noqa
+                "accuracy_overall": MulticlassAccuracy(**overall_metrics_kwargs),  # type: ignore # noqa
+                "precision_overall": MulticlassPrecision(**overall_metrics_kwargs),  # type: ignore # noqa
+                "recall_overall": MulticlassRecall(**overall_metrics_kwargs),  # type: ignore # noqa
+                "f1_overall": MulticlassF1Score(**overall_metrics_kwargs),  # type: ignore # noqa
+                "Cohen_Kappa_overall": MulticlassCohenKappa(**overall_metrics_kwargs),  # type: ignore # noqa
+                "AP_overall": MulticlassAveragePrecision(**overall_metrics_kwargs),  # type: ignore # noqa
                 "classwise_accuracy": ClasswiseWrapper(
-                    MulticlassAccuracy(**classwise_metrics_kwargs), class_names
+                    MulticlassAccuracy(**classwise_metrics_kwargs),
+                    class_names,
+                    prefix="accuracy_",
                 ),
                 "classwise_precision": ClasswiseWrapper(
-                    MulticlassPrecision(**classwise_metrics_kwargs), class_names
+                    MulticlassPrecision(**classwise_metrics_kwargs),
+                    class_names,
+                    prefix="precision_",
                 ),
                 "classwise_recall": ClasswiseWrapper(
-                    MulticlassRecall(**classwise_metrics_kwargs), class_names
+                    MulticlassRecall(**classwise_metrics_kwargs),
+                    class_names,
+                    prefix="recall_",
                 ),
                 "classwise_f1": ClasswiseWrapper(
-                    MulticlassF1Score(**classwise_metrics_kwargs), class_names
+                    MulticlassF1Score(**classwise_metrics_kwargs),
+                    class_names,
+                    prefix="f1_",
                 ),
             }
         )
