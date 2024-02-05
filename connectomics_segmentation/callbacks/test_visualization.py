@@ -5,6 +5,7 @@ import torch
 import wandb
 from lightning import Callback
 from lightning import pytorch as pl
+from lightning.pytorch.loggers.wandb import WandbLogger
 
 
 class TestVisualizationCallback(Callback):
@@ -19,11 +20,12 @@ class TestVisualizationCallback(Callback):
         super().__init__()
         self.image_height = image_height
         self.image_width = image_width
+
         self._buffer = np.empty(image_height * image_width)
         self._remain_unfilled = image_width * image_height
         self._num_image = 1
 
-        self._label2color = np.array(label_colors)
+        self._label2color = np.array(label_colors, dtype=np.uint8)
 
     def map_labels_to_color(self, labels: np.ndarray) -> np.ndarray:
         img_shape = (self.image_height, self.image_width, 3)
@@ -58,16 +60,19 @@ class TestVisualizationCallback(Callback):
             image = self.map_labels_to_color(
                 self._buffer.reshape((self.image_height, self.image_width))
             )
+
             caption = f"Predicted test image {self._num_image}"
-            pl_module.logger.experiment.log(
-                {"Visualization": [wandb.Image(image, caption=caption)]},
-                step=trainer.global_step,
-            )
-            self._num_image += 1
+            for logger in pl_module.loggers:
+                if isinstance(logger, WandbLogger):
+                    logger.experiment.log(
+                        {"Visualization": [wandb.Image(image, caption=caption)]},
+                        step=trainer.global_step,
+                    )
 
             N_preds += start_idx
             self._remain_unfilled = self.image_height * self.image_width
             start_idx = -self._remain_unfilled
+            self._num_image += 1
 
         end_idx = -self._remain_unfilled + N_preds
         self._buffer[start_idx:end_idx] = pred_labels
