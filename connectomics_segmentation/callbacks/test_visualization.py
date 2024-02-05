@@ -29,8 +29,8 @@ class TestVisualizationCallback(Callback):
         for label in range(self._label2color.shape[0]):
             idx = labels == label
             img[idx, 0] = self._label2color[label, 0]
-            img[idx, 0] = self._label2color[label, 1]
-            img[idx, 0] = self._label2color[label, 2]
+            img[idx, 1] = self._label2color[label, 1]
+            img[idx, 2] = self._label2color[label, 2]
 
         return img
 
