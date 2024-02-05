@@ -37,7 +37,8 @@ dev = [
     "flake8",
     "isort",
     "ipykernel",
-    "matplotlib"
+    "matplotlib",
+    "scikit-learn==1.4.0"
 ]
 
 [tool.isort]

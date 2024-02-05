@@ -2,7 +2,7 @@
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --time=8:00:00
+#SBATCH --time=12:00:00
 #SBATCH --account=p_pixel
 #SBATCH --job-name=training
 #SBATCH --gres=gpu:1
