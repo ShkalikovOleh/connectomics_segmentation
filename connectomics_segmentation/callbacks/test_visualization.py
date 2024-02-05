@@ -8,7 +8,10 @@ from lightning import pytorch as pl
 
 
 class TestVisualizationCallback(Callback):
-    """Callback for visualizing reconstruction and classification."""
+    """This callback gather and store all prediction of center voxel class
+    and generates images of semantic segmentation based on the these labels
+    when all pixels of image have been saved in the internal buffer.
+    Requires from dataloader that it doesn't shuffle the test dataset"""
 
     def __init__(
         self, image_width: int, image_height: int, label_colors: list[tuple[int]]
