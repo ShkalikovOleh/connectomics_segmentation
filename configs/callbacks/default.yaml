@@ -1,4 +1,5 @@
 defaults:
   - model_checkpoint
   - early_stopping
+  - test_visualization
   - _self_

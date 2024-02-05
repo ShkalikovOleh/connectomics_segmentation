@@ -163,13 +163,17 @@ class SupervisedMetaModel(LightningModule):
             self.log_dict(self.valid_metrics.compute())
         self.valid_metrics.reset()
 
-    def test_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> None:
+    def test_step(
+        self, batch: dict[str, torch.Tensor], batch_idx: int
+    ) -> dict[str, torch.Tensor]:
         preds = self.forward(batch["data"])
         target = batch["label"]
 
         if not torch.all(target == self.num_classes):
             self.log_test_metrics = True
             self.test_metrics.update(preds, target)
+
+        return {"predictions": preds.detach().cpu()}
 
     def on_test_epoch_end(self) -> None:
         if self.log_test_metrics:
