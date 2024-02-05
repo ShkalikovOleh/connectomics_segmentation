@@ -2,3 +2,10 @@ test_visualization:
   _target_: connectomics_segmentation.callbacks.TestVisualizationCallback
   image_width: 425
   image_height: 425
+  label_colors:
+    - [255,0,0]
+    - [0,255,0]
+    - [255,215,0]
+    - [0, 136, 255]
+    - [0, 0, 136]
+    - [255,0,255]

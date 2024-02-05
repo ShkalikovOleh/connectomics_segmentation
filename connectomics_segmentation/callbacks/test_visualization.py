@@ -10,13 +10,29 @@ from lightning import pytorch as pl
 class TestVisualizationCallback(Callback):
     """Callback for visualizing reconstruction and classification."""
 
-    def __init__(self, image_width: int, image_height: int):
+    def __init__(
+        self, image_width: int, image_height: int, label_colors: list[tuple[int]]
+    ):
         super().__init__()
         self.image_height = image_height
         self.image_width = image_width
         self._buffer = np.empty(image_height * image_width)
         self._remain_unfilled = image_width * image_height
         self._num_image = 1
+
+        self._label2color = np.array(label_colors)
+
+    def map_labels_to_color(self, labels: np.ndarray) -> np.ndarray:
+        img_shape = (self.image_height, self.image_width, 3)
+        img = np.zeros(img_shape, dtype=np.uint8)
+
+        for label in range(self._label2color.shape[0]):
+            idx = labels == label
+            img[idx, 0] = self._label2color[label, 0]
+            img[idx, 0] = self._label2color[label, 1]
+            img[idx, 0] = self._label2color[label, 2]
+
+        return img
 
     def on_test_batch_end(
         self,
@@ -36,7 +52,9 @@ class TestVisualizationCallback(Callback):
             self._buffer[start_idx:] = pred_labels[:-start_idx]
             pred_labels = pred_labels[-start_idx:]
 
-            image = self._buffer.reshape((self.image_height, self.image_width))
+            image = self.map_labels_to_color(
+                self._buffer.reshape((self.image_height, self.image_width))
+            )
             caption = f"Predicted test image {self._num_image}"
             pl_module.logger.experiment.log(
                 {"Visualization": [wandb.Image(image, caption=caption)]},
