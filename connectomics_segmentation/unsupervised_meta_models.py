@@ -137,11 +137,11 @@ class CenterVoxelRegressionMetaModel(LightningModule):
         return self.head_model(features)
 
     def _step(self, batch: torch.Tensor, stage: str) -> torch.Tensor:
-        preds = self.forward(batch)
-
         H = batch.shape[2]
-        print(H // 2)
-        targets = batch[:, 0, H // 2, H // 2, H // 2]
+        targets = batch[:, 0, H // 2, H // 2, H // 2].detach().clone().unsqueeze_(1)
+        batch[:, 0, H // 2, H // 2, H // 2] = 0
+
+        preds = self.forward(batch)
 
         loss = self.loss_module(preds, targets)
 
