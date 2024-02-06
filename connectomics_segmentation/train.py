@@ -7,6 +7,7 @@ from omegaconf import DictConfig, OmegaConf
 from connectomics_segmentation.data.labeled_data import LabeledDataModule
 from connectomics_segmentation.data.raw_data import RawDataModule
 from connectomics_segmentation.supervised_meta_model import SupervisedMetaModel
+from connectomics_segmentation.unsurervised_meta_models import VAEMetaModel
 from connectomics_segmentation.utils.instantiators import (
     instantiate_callbacks,
     instantiate_loggers,
@@ -42,6 +43,8 @@ def main(cfg: DictConfig) -> None:
 
     torch.set_float32_matmul_precision("high")
 
+    hparams = {"cfg": cfg}
+
     if cfg.supervised:
         log.info("Instantiate model")
         backbone_model = instantiate(cfg.model.supervised.backbone)
@@ -66,21 +69,35 @@ def main(cfg: DictConfig) -> None:
 
         log.info("Create labeled data module")
         dm = LabeledDataModule(cfg.data, augmentations)
+
+        hparams["backbone_model"] = backbone_model
+        hparams["head_model"] = head_model
     else:
+        log.info("Instantiate model")
+        if cfg.model.unsupervised.get("vae"):
+            model = instantiate(cfg.model.unsupervised.vae)
+
+            module = VAEMetaModel(
+                model=model,
+                recon_loss=loss,
+                optimizer_factory=optim_factory,
+                kl_loss_weight=cfg.model.unsupervised.kl_loss_weight,
+                lr_scheduler_factory=sched_factory,
+                compile_model=cfg.model.compile_model,
+            )
+
+            hparams["model"] = model
+        else:
+            return
+
         log.info("Create raw data module")
         dm = RawDataModule(cfg.data)
-        return
 
     log.info("Instantiate trainer")
     trainer = instantiate(cfg.trainer, logger=loggers, callbacks=callbacks)
+    hparams["trainer"] = trainer
 
     log.info("Logging hyperparameters")
-    hparams = {
-        "cfg": cfg,
-        "backbone_model": backbone_model,
-        "head_model": head_model,
-        "trainer": trainer,
-    }
     log_hyperparameters(hparams)
 
     log.info("Start training")

@@ -4,10 +4,21 @@ from typing import Any, Dict
 
 from lightning_utilities.core.rank_zero import rank_zero_only
 from omegaconf import OmegaConf
+from torch import nn
 
 from connectomics_segmentation.utils import pylogger
 
 log = pylogger.RankedLogger(__name__, rank_zero_only=True)
+
+
+def log_num_param(hparams, model: nn.Module):
+    hparams["model/backbone/params/total"] = sum(p.numel() for p in model.parameters())
+    hparams["model/backbone/params/trainable"] = sum(
+        p.numel() for p in model.parameters() if p.requires_grad
+    )
+    hparams["model/backbone/params/non_trainable"] = sum(
+        p.numel() for p in model.parameters() if not p.requires_grad
+    )
 
 
 @rank_zero_only
@@ -25,8 +36,15 @@ def log_hyperparameters(object_dict: Dict[str, Any]) -> None:
     hparams = {}
 
     cfg = OmegaConf.to_container(object_dict["cfg"])
-    backbone_model = object_dict["backbone_model"]
-    head_model = object_dict["head_model"]
+    if object_dict.get("backbone_model"):
+        backbone_model = object_dict["backbone_model"]
+        head_model = object_dict["head_model"]
+        # save number of model parameters
+        log_num_param(hparams, backbone_model)
+        log_num_param(hparams, head_model)
+    else:
+        log_num_param(hparams, object_dict["model"])
+
     trainer = object_dict["trainer"]
 
     if not trainer.logger:
@@ -34,24 +52,6 @@ def log_hyperparameters(object_dict: Dict[str, Any]) -> None:
         return
 
     hparams["model"] = cfg["model"]  # type: ignore
-
-    # save number of model parameters
-    hparams["model/backbone/params/total"] = sum(
-        p.numel() for p in backbone_model.parameters()
-    )
-    hparams["model/backbone/params/trainable"] = sum(
-        p.numel() for p in backbone_model.parameters() if p.requires_grad
-    )
-    hparams["model/backbone/params/non_trainable"] = sum(
-        p.numel() for p in backbone_model.parameters() if not p.requires_grad
-    )
-    hparams["model/head/params/total"] = sum(p.numel() for p in head_model.parameters())
-    hparams["model/head/params/trainable"] = sum(
-        p.numel() for p in head_model.parameters() if p.requires_grad
-    )
-    hparams["model/head/params/non_trainable"] = sum(
-        p.numel() for p in head_model.parameters() if not p.requires_grad
-    )
 
     hparams["data"] = cfg["data"]  # type: ignore
     hparams["trainer"] = cfg["trainer"]  # type: ignore

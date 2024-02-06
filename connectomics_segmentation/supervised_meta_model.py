@@ -3,7 +3,7 @@ from typing import Any, Callable, Iterator
 
 import torch
 from lightning.pytorch import LightningModule
-from torchmetrics import MetricCollection, ClasswiseWrapper
+from torchmetrics import ClasswiseWrapper, MetricCollection
 from torchmetrics.classification import (
     MulticlassAccuracy,
     MulticlassAveragePrecision,
