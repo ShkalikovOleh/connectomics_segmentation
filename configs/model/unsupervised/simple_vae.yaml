@@ -3,8 +3,18 @@
 vae:
   _target_: connectomics_segmentation.models.VAE
   decoder:
-    _target_: torch.nn.Identity
+    _target_: torch.nn.Sequential
+    _args_:
+      - _target_: torch.nn.Linear
+        in_features: 512
+        out_features: 262144
+      - _target_: torch.nn.Unflatten
+        _convert_ : partial
+        dim: 1
+        unflattened_size: [64, 64, 64]
+
   latent_dim: 512
-  enc_out_feat_dim: 262144
+  # enc_out_feat_dim: 262144
+  enc_out_feat_dim: 46656
 
 kl_loss_weight: 0.5
