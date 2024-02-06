@@ -11,6 +11,7 @@ from connectomics_segmentation.unsupervised_meta_models import (
     CenterVoxelRegressionMetaModel,
     VAEMetaModel,
 )
+from connectomics_segmentation.utils.checkpoints import load_pretrained_backbone
 from connectomics_segmentation.utils.instantiators import (
     instantiate_callbacks,
     instantiate_loggers,
@@ -52,6 +53,13 @@ def main(cfg: DictConfig) -> None:
         log.info("Instantiate model")
         backbone_model = instantiate(cfg.model.backbone)
         head_model = instantiate(cfg.model.head)
+
+        if cfg.get("pretrained_ckpt_path") and not cfg.get("ckpt_path"):
+            load_pretrained_backbone(
+                backbone_model,
+                cfg.pretrained_ckpt_path,
+                cfg.load_vae_mean_head,
+            )
 
         module = SupervisedMetaModel(
             backbone_model=backbone_model,

@@ -148,7 +148,6 @@ class CenterVoxelRegressionMetaModel(LightningModule):
         nn.functional.dropout(
             batch, p=self.dropout_prob, training=self.training, inplace=True
         )
-        print(torch.sum(batch == 0))
 
         preds = self.forward(batch)
 
