@@ -7,7 +7,10 @@ from omegaconf import DictConfig, OmegaConf
 from connectomics_segmentation.data.labeled_data import LabeledDataModule
 from connectomics_segmentation.data.raw_data import RawDataModule
 from connectomics_segmentation.supervised_meta_model import SupervisedMetaModel
-from connectomics_segmentation.unsurervised_meta_models import VAEMetaModel
+from connectomics_segmentation.unsupervised_meta_models import (
+    CenterVoxelRegressionMetaModel,
+    VAEMetaModel,
+)
 from connectomics_segmentation.utils.instantiators import (
     instantiate_callbacks,
     instantiate_loggers,
@@ -47,8 +50,8 @@ def main(cfg: DictConfig) -> None:
 
     if cfg.supervised:
         log.info("Instantiate model")
-        backbone_model = instantiate(cfg.model.supervised.backbone)
-        head_model = instantiate(cfg.model.supervised.head)
+        backbone_model = instantiate(cfg.model.backbone)
+        head_model = instantiate(cfg.model.head)
 
         module = SupervisedMetaModel(
             backbone_model=backbone_model,
@@ -74,21 +77,34 @@ def main(cfg: DictConfig) -> None:
         hparams["head_model"] = head_model
     else:
         log.info("Instantiate model")
-        if cfg.model.unsupervised.get("vae"):
-            model = instantiate(cfg.model.unsupervised.vae)
+        if cfg.model.get("vae"):
+            model = instantiate(cfg.model.vae)
 
             module = VAEMetaModel(
                 model=model,
                 recon_loss=loss,
                 optimizer_factory=optim_factory,
-                kl_loss_weight=cfg.model.unsupervised.kl_loss_weight,
+                kl_loss_weight=cfg.model.kl_loss_weight,
                 lr_scheduler_factory=sched_factory,
                 compile_model=cfg.model.compile_model,
             )
 
             hparams["model"] = model
         else:
-            return
+            backbone_model = instantiate(cfg.model.backbone)
+            head_model = instantiate(cfg.model.head)
+
+            module = CenterVoxelRegressionMetaModel(
+                backbone_model=backbone_model,
+                head_model=head_model,
+                loss=loss,
+                optimizer_factory=optim_factory,
+                lr_scheduler_factory=sched_factory,
+                compile_model=cfg.model.compile_model,
+            )
+
+            hparams["backbone_model"] = backbone_model
+            hparams["head_model"] = head_model
 
         log.info("Create raw data module")
         dm = RawDataModule(cfg.data)

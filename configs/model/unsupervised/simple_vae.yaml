@@ -1,3 +1,5 @@
+# @package model
+
 vae:
   _target_: connectomics_segmentation.models.VAE
   encoder:

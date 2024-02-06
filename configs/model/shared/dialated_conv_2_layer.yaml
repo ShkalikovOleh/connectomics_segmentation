@@ -1,3 +1,5 @@
+# @package model
+
 backbone:
   _target_: torch.nn.Sequential
   _args_:
@@ -34,11 +36,3 @@ backbone:
     - _target_: torch.nn.AvgPool3d
       kernel_size: 2
       stride: 2
-
-head:
-  _target_: torch.nn.Sequential
-  _args_:
-  - _target_: torch.nn.Flatten
-  - _target_: torch.nn.Linear
-    in_features: 46656
-    out_features: ${model.num_classes}

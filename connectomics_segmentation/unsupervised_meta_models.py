@@ -1,3 +1,4 @@
+from itertools import chain
 from typing import Any, Callable, Iterator
 
 import torch
@@ -72,6 +73,78 @@ class VAEMetaModel(LightningModule):
 
         self.log(f"{stage}/recon_loss", rec_loss)
         self.log(f"{stage}/kl_loss", kl_loss)
+        self.log(f"{stage}/loss", loss)
+
+        return loss
+
+    def training_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
+        return self._step(batch, "train")
+
+    def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
+        self._step(batch, "val")
+
+    def test_step(self, batch: torch.Tensor, batch_idx: int) -> None:
+        self._step(batch, "test")
+
+
+class CenterVoxelRegressionMetaModel(LightningModule):
+    def __init__(
+        self,
+        backbone_model: torch.nn.Module,
+        head_model: torch.nn.Module,
+        loss: nn.Module,
+        optimizer_factory: opt_factory,
+        lr_scheduler_factory: lr_sched_factory | None = None,
+        compile_model: bool = True,
+    ) -> None:
+        super().__init__()
+
+        self.backbone_model = backbone_model
+        self.head_model = head_model
+        self.loss_module = loss
+        self.optimizer_factory = optimizer_factory
+        self.lr_scheduler_factory = lr_scheduler_factory
+        self.compile_model = compile_model
+
+    def setup(self, stage: str) -> None:
+        if self.compile_model and stage == "fit":
+            self.backbone_model = torch.compile(self.backbone_model)
+            self.head_model = torch.compile(self.head_model)
+        return super().setup(stage)
+
+    def configure_optimizers(self) -> dict[str, Any]:
+        backbone_params = self.backbone_model.parameters()
+        head_params = self.head_model.parameters()
+        params = chain(backbone_params, head_params)
+        optimizer = self.optimizer_factory(params)
+
+        if self.lr_scheduler_factory is not None:
+            lr_scheduler = self.lr_scheduler_factory(optimizer)
+            return {
+                "optimizer": optimizer,
+                "lr_scheduler": {
+                    "scheduler": lr_scheduler,
+                    "monitor": "val/loss",
+                    "interval": "epoch",
+                    "frequency": 1,
+                },
+            }
+        else:
+            return {"optimizer": optimizer}
+
+    def forward(self, data: torch.Tensor) -> torch.Tensor:
+        features = self.backbone_model(data)
+        return self.head_model(features)
+
+    def _step(self, batch: torch.Tensor, stage: str) -> torch.Tensor:
+        preds = self.forward(batch)
+
+        H = batch.shape[2]
+        print(H // 2)
+        targets = batch[:, 0, H // 2, H // 2, H // 2]
+
+        loss = self.loss_module(preds, targets)
+
         self.log(f"{stage}/loss", loss)
 
         return loss
