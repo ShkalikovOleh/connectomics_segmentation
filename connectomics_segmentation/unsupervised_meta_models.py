@@ -95,6 +95,7 @@ class CenterVoxelRegressionMetaModel(LightningModule):
         loss: nn.Module,
         optimizer_factory: opt_factory,
         lr_scheduler_factory: lr_sched_factory | None = None,
+        dropout_prob: float = 0.3,
         compile_model: bool = True,
     ) -> None:
         super().__init__()
@@ -105,6 +106,7 @@ class CenterVoxelRegressionMetaModel(LightningModule):
         self.optimizer_factory = optimizer_factory
         self.lr_scheduler_factory = lr_scheduler_factory
         self.compile_model = compile_model
+        self.dropout_prob = dropout_prob
 
     def setup(self, stage: str) -> None:
         if self.compile_model and stage == "fit":
@@ -137,9 +139,16 @@ class CenterVoxelRegressionMetaModel(LightningModule):
         return self.head_model(features)
 
     def _step(self, batch: torch.Tensor, stage: str) -> torch.Tensor:
+        # targets are center voxels
         H = batch.shape[2]
         targets = batch[:, 0, H // 2, H // 2, H // 2].detach().clone().unsqueeze_(1)
+
+        # mask center voxel and several others randomly
         batch[:, 0, H // 2, H // 2, H // 2] = 0
+        nn.functional.dropout(
+            batch, p=self.dropout_prob, training=self.training, inplace=True
+        )
+        print(torch.sum(batch == 0))
 
         preds = self.forward(batch)
 
