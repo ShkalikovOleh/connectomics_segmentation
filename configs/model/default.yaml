@@ -1,18 +1,21 @@
 defaults:
   - _self_
   # - unsupervised/simple_vae
-  - shared/dialated_conv_2_layer
-  # - supervised/linear_head
-  - unsupervised/linear_head
+  - shared/default
+  - supervised/default
+  # - unsupervised/linear_head
+
+# vae:
+#   encoder: ${model.backbone}
 
 num_classes: 6
 compile_model: True
 
-# loss:
-#   _target_: torch.nn.CrossEntropyLoss
-#   ignore_index: 6
 loss:
-  _target_: torch.nn.MSELoss
+  _target_: torch.nn.CrossEntropyLoss
+  ignore_index: 6
+# loss:
+  # _target_: torch.nn.MSELoss
 
 optimizer:
   _target_: torch.optim.Adam

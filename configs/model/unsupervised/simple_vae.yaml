@@ -2,8 +2,6 @@
 
 vae:
   _target_: connectomics_segmentation.models.VAE
-  encoder:
-    _target_: torch.nn.Identity
   decoder:
     _target_: torch.nn.Identity
   latent_dim: 512
