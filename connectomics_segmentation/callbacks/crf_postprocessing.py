@@ -183,7 +183,7 @@ class DenseCRFPostprocessingCallback(Callback):
         dataloader_idx: int = 0,
     ) -> None:
         proba = outputs["predictions"].numpy()
-        H = proba.shape[-1]
+        H = batch["data"].shape[-1]
         intensity = batch["data"][:, 0, H // 2, H // 2, H // 2].detach().cpu().numpy()
         true_labels = batch["label"].detach().cpu().numpy()
 
