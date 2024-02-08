@@ -19,7 +19,8 @@ dependencies = [
     "wandb==0.16.1",
     "tifffile==2023.9.26",
     "patchify==0.2.3",
-    "volumentations-3D==1.0.4"
+    "volumentations-3D==1.0.4",
+    "pydensecrf @ git+https://github.com/lucasb-eyer/pydensecrf.git@dd070546eda51e21ab772ee6f14807c7f5b1548b"
 ]
 license = {file = "LICENSE"}
 readme = "README.md"
