@@ -28,7 +28,7 @@ class DenseCRFPostprocessingCallback(Callback):
         self,
         image_width: int,
         image_height: int,
-        label_colors: list[tuple[int]],
+        n_classes: int,
         position_theta: list[float],
         bilateral_theta: float,
         compat_position: float,
@@ -40,7 +40,7 @@ class DenseCRFPostprocessingCallback(Callback):
         super().__init__()
         self.image_height = image_height
         self.image_width = image_width
-        self.n_classes = len(label_colors)
+        self.n_classes = n_classes
 
         self._class_names = class_names
         self._position_theta = position_theta
@@ -58,17 +58,15 @@ class DenseCRFPostprocessingCallback(Callback):
         self._remain_unfilled = image_width * image_height
         self._num_image = 1
 
-        self._label2color = np.array(label_colors, dtype=np.uint8)
-
         self.calculate_metrics = calculate_metrics
         self._metrics_ready = False
         if calculate_metrics:
-            self.metrics = self.create_metrics(prefix="CRF/")
+            self.metrics = self.create_metrics()
             self._true_label_buffer = np.empty(
                 image_height * image_width, dtype=np.uint8
             )
 
-    def create_metrics(self, prefix: str) -> MetricCollection:
+    def create_metrics(self) -> MetricCollection:
         overall_metrics_kwargs = {
             "num_classes": self.n_classes,
             "ignore_index": self.n_classes,
@@ -110,18 +108,6 @@ class DenseCRFPostprocessingCallback(Callback):
 
         return metrics
 
-    def map_labels_to_color(self, labels: np.ndarray) -> np.ndarray:
-        img_shape = (self.image_height, self.image_width, 3)
-        img = np.zeros(img_shape, dtype=np.uint8)
-
-        for label in range(self._label2color.shape[0]):
-            idx = labels == label
-            img[idx, 0] = self._label2color[label, 0]
-            img[idx, 1] = self._label2color[label, 1]
-            img[idx, 2] = self._label2color[label, 2]
-
-        return img
-
     def __apply_crf_and_log(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
         proba = self._proba_buffer.reshape(
             (self.n_classes, self.image_height, self.image_width, 1)
@@ -130,7 +116,7 @@ class DenseCRFPostprocessingCallback(Callback):
             (1, self.image_height, self.image_width, 1)
         )
 
-        image = apply_crf(
+        crf_labels = apply_crf(
             proba=proba,
             intensities=intensities,
             pos_weights=self._position_theta,
@@ -140,23 +126,47 @@ class DenseCRFPostprocessingCallback(Callback):
             num_steps=self._num_steps,
         )
 
-        image = image.reshape((self.image_height, self.image_width))
-        color_image = self.map_labels_to_color(image)
+        crf_labels = crf_labels.reshape((self.image_height, self.image_width))
+        raw_pred_labels = proba.argmax(axis=0)[:, :, 0]
+        true_labels = self._true_label_buffer.reshape(
+            (self.image_height, self.image_width)
+        )
+        image = intensities[0]
 
-        caption = f"CRF/image {self._num_image}"
+        if self._class_names:
+            id2class = {i: name for i, name in enumerate(self._class_names)}
+        else:
+            id2class = {i: str(i) for i in range(self.n_classes)}
+
+        log_name = f"CRF/image {self._num_image}"
         for logger in pl_module.loggers:
             if isinstance(logger, WandbLogger):
+                mask_img = wandb.Image(
+                    image,
+                    masks={
+                        "raw_predictions": {
+                            "mask_data": raw_pred_labels,
+                            "class_labels": id2class,
+                        },
+                        "ground_truth": {
+                            "mask_data": true_labels,
+                            "class_labels": id2class,
+                        },
+                        "crf_prefictions": {
+                            "mask_data": crf_labels,
+                            "class_labels": id2class,
+                        },
+                    },
+                )
+
                 logger.experiment.log(
-                    {caption: [wandb.Image(color_image, caption=caption)]},
+                    {log_name: [mask_img]},
                     step=trainer.global_step,
                 )
 
         if self.calculate_metrics:
-            true_labels = self._true_label_buffer.reshape(
-                (self.image_height, self.image_width)
-            )
             if not np.all(true_labels == self.n_classes):
-                preds = torch.from_numpy(image)
+                preds = torch.from_numpy(crf_labels)
                 target = torch.from_numpy(true_labels)
 
                 self.metrics.update(preds, target)
@@ -175,8 +185,7 @@ class DenseCRFPostprocessingCallback(Callback):
         proba = outputs["predictions"].numpy()
         H = proba.shape[-1]
         intensity = batch["data"][:, 0, H // 2, H // 2, H // 2].detach().cpu().numpy()
-        if self.calculate_metrics:
-            true_labels = batch["label"].detach().cpu().numpy()
+        true_labels = batch["label"].detach().cpu().numpy()
 
         N_preds = intensity.size
 
@@ -184,12 +193,11 @@ class DenseCRFPostprocessingCallback(Callback):
         if self._remain_unfilled <= N_preds:  # type: ignore # noqa
             self._intensities_buffer[start_idx:] = intensity[:-start_idx]
             self._proba_buffer[:, start_idx:] = proba[:-start_idx].T
+            self._true_label_buffer[start_idx:] = true_labels[:-start_idx]  # type: ignore # noqa
+
             intensity = intensity[-start_idx:]
             proba = proba[-start_idx:]
-
-            if self.calculate_metrics:
-                self._true_label_buffer[start_idx:] = true_labels[:-start_idx]  # type: ignore # noqa
-                true_labels = true_labels[-start_idx:]  # type: ignore # noqa
+            true_labels = true_labels[-start_idx:]  # type: ignore # noqa
 
             self.__apply_crf_and_log(trainer, pl_module)
 
@@ -202,8 +210,7 @@ class DenseCRFPostprocessingCallback(Callback):
 
         self._intensities_buffer[start_idx:end_idx] = intensity
         self._proba_buffer[:, start_idx:end_idx] = proba.T
-        if self.calculate_metrics:
-            self._true_label_buffer[start_idx:end_idx] = true_labels  # type: ignore # noqa
+        self._true_label_buffer[start_idx:end_idx] = true_labels  # type: ignore # noqa
 
         self._remain_unfilled -= N_preds
 
