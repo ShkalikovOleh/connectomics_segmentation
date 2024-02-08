@@ -1,9 +1,9 @@
 crf_postprocessing:
   _target_: connectomics_segmentation.callbacks.DenseCRFPostprocessingCallback
   _convert_: all
-  image_width: ${callbacks.test_visualization.image_width}
-  image_height: ${callbacks.test_visualization.image_height}
-  label_colors: ${callbacks.test_visualization.label_colors}
+  image_width: 425
+  image_height: 425
+  n_classes: ${model.num_classes}
   class_names: ${data.class_names}
   calculate_metrics: True
   position_theta:
