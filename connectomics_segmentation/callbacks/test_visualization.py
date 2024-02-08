@@ -61,11 +61,11 @@ class TestVisualizationCallback(Callback):
                 self._buffer.reshape((self.image_height, self.image_width))
             )
 
-            caption = f"Predicted test image {self._num_image}"
+            caption = f"test/image {self._num_image}"
             for logger in pl_module.loggers:
                 if isinstance(logger, WandbLogger):
                     logger.experiment.log(
-                        {"Visualization": [wandb.Image(image, caption=caption)]},
+                        {caption: [wandb.Image(image, caption=caption)]},
                         step=trainer.global_step,
                     )
 

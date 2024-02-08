@@ -63,7 +63,7 @@ class DenseCRFPostprocessingCallback(Callback):
         self.calculate_metrics = calculate_metrics
         self._metrics_ready = False
         if calculate_metrics:
-            self.metrics = self.create_metrics(prefix="CRF")
+            self.metrics = self.create_metrics(prefix="CRF/")
             self._true_label_buffer = np.empty(
                 image_height * image_width, dtype=np.uint8
             )
@@ -80,30 +80,30 @@ class DenseCRFPostprocessingCallback(Callback):
         }
         metrics = MetricCollection(
             {
-                f"{prefix}_accuracy_overall": MulticlassAccuracy(**overall_metrics_kwargs),  # type: ignore # noqa
-                f"{prefix}_precision_overall": MulticlassPrecision(**overall_metrics_kwargs),  # type: ignore # noqa
-                f"{prefix}_recall_overall": MulticlassRecall(**overall_metrics_kwargs),  # type: ignore # noqa
-                f"{prefix}_f1_overall": MulticlassF1Score(**overall_metrics_kwargs),  # type: ignore # noqa
-                f"{prefix}_Cohen_Kappa_overall": MulticlassCohenKappa(**overall_metrics_kwargs),  # type: ignore # noqa
-                f"{prefix}_classwise_accuracy": ClasswiseWrapper(
+                "CRF/accuracy_overall": MulticlassAccuracy(**overall_metrics_kwargs),  # type: ignore # noqa
+                "CRF/precision_overall": MulticlassPrecision(**overall_metrics_kwargs),  # type: ignore # noqa
+                "CRF/recall_overall": MulticlassRecall(**overall_metrics_kwargs),  # type: ignore # noqa
+                "CRF/f1_overall": MulticlassF1Score(**overall_metrics_kwargs),  # type: ignore # noqa
+                "CRF/Cohen_Kappa_overall": MulticlassCohenKappa(**overall_metrics_kwargs),  # type: ignore # noqa
+                "CRF/classwise_accuracy": ClasswiseWrapper(
                     MulticlassAccuracy(**classwise_metrics_kwargs),
                     self._class_names,
-                    prefix=f"{prefix}_accuracy_",
+                    prefix="CRF/accuracy_",
                 ),
-                f"{prefix}_classwise_precision": ClasswiseWrapper(
+                "CRF/classwise_precision": ClasswiseWrapper(
                     MulticlassPrecision(**classwise_metrics_kwargs),
                     self._class_names,
-                    prefix=f"{prefix}_precision_",
+                    prefix="CRF/precision_",
                 ),
-                f"{prefix}_classwise_recall": ClasswiseWrapper(
+                "CRF/classwise_recall": ClasswiseWrapper(
                     MulticlassRecall(**classwise_metrics_kwargs),
                     self._class_names,
-                    prefix=f"{prefix}_recall_",
+                    prefix="CRF/recall_",
                 ),
-                f"{prefix}_classwise_f1": ClasswiseWrapper(
+                "CRF/classwise_f1": ClasswiseWrapper(
                     MulticlassF1Score(**classwise_metrics_kwargs),
                     self._class_names,
-                    prefix=f"{prefix}_f1_",
+                    prefix="CRF/f1_",
                 ),
             }
         )
@@ -143,11 +143,11 @@ class DenseCRFPostprocessingCallback(Callback):
         image = image.reshape((self.image_height, self.image_width))
         color_image = self.map_labels_to_color(image)
 
-        caption = f"CRF post processed test image {self._num_image}"
+        caption = f"CRF/image {self._num_image}"
         for logger in pl_module.loggers:
             if isinstance(logger, WandbLogger):
                 logger.experiment.log(
-                    {"Visualization": [wandb.Image(color_image, caption=caption)]},
+                    {caption: [wandb.Image(color_image, caption=caption)]},
                     step=trainer.global_step,
                 )
 
