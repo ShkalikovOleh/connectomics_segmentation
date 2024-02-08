@@ -12,9 +12,9 @@ defaults:
 task_name: train
 supervised: True
 # supervised: False
-run_test: False
-# run_test: True
-pretrained_ckpt_path: ???
+# run_test: False
+run_test: True
+# pretrained_ckpt_path: "/home/shov/projects/connectomics_segmentation/logs/train/runs/2024-02-06_17-37-59/checkpoints/last.ckpt"
 # load_vae_mean_head: True
 load_vae_mean_head: False
 ckpt_path: null  # checkpoint path to resume training
