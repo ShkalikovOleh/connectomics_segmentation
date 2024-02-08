@@ -188,7 +188,7 @@ class LabeledDataModule(LightningDataModule):
     def train_dataloader(self) -> DataLoader:
         return DataLoader(
             self.train_ds,
-            batch_size=self.cfg.batch_size,
+            batch_size=self.cfg.train_batch_size,
             shuffle=True,
             num_workers=self.cfg.num_workers,
         )
@@ -196,13 +196,13 @@ class LabeledDataModule(LightningDataModule):
     def val_dataloader(self) -> DataLoader:
         return DataLoader(
             self.valid_ds,
-            batch_size=self.cfg.batch_size,
+            batch_size=self.cfg.devel_batch_size,
             num_workers=self.cfg.num_workers,
         )
 
     def test_dataloader(self) -> DataLoader:
         return DataLoader(
             self.test_ds,
-            batch_size=self.cfg.batch_size,
+            batch_size=self.cfg.devel_batch_size,
             num_workers=self.cfg.num_workers,
         )

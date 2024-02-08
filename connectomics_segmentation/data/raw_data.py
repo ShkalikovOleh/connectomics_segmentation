@@ -97,7 +97,7 @@ class RawDataModule(LightningDataModule):
         sampler = BufferizedRandomSampler(self.train_ds, self.cfg.sampler_buffer_size)
         return DataLoader(
             self.train_ds,
-            batch_size=self.cfg.batch_size,
+            batch_size=self.cfg.train_batch_size,
             sampler=sampler,
             num_workers=self.cfg.num_workers,
         )
@@ -105,13 +105,13 @@ class RawDataModule(LightningDataModule):
     def val_dataloader(self) -> DataLoader:
         return DataLoader(
             self.val_ds,
-            batch_size=self.cfg.batch_size,
+            batch_size=self.cfg.devel_batch_size,
             num_workers=self.cfg.num_workers,
         )
 
     def test_dataloader(self) -> DataLoader:
         return DataLoader(
             self.test_ds,
-            batch_size=self.cfg.batch_size,
+            batch_size=self.cfg.devel_batch_size,
             num_workers=self.cfg.num_workers,
         )
