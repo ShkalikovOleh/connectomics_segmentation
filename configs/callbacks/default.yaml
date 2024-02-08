@@ -2,4 +2,5 @@ defaults:
   - model_checkpoint
   - early_stopping
   - test_visualization
+  - crf_postprocessing
   - _self_

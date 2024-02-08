@@ -1,0 +1,16 @@
+crf_postprocessing:
+  _target_: connectomics_segmentation.callbacks.DenseCRFPostprocessingCallback
+  _convert_: all
+  image_width: ${callbacks.test_visualization.image_width}
+  image_height: ${callbacks.test_visualization.image_height}
+  label_colors: ${callbacks.test_visualization.label_colors}
+  class_names: ${data.class_names}
+  calculate_metrics: True
+  position_theta:
+    - 1
+    - 1
+    - 1
+  bilateral_theta: 1
+  compat_position: 1
+  compat_bilateral: 1
+  num_steps: 10
