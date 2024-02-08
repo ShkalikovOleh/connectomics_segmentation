@@ -4,6 +4,7 @@ import hydra
 import lightning as L
 import torch
 from hydra.utils import instantiate
+from lightning.pytorch.loggers.wandb import WandbLogger
 from omegaconf import DictConfig, OmegaConf
 
 from connectomics_segmentation.data.labeled_data import LabeledDataModule
@@ -24,7 +25,7 @@ from connectomics_segmentation.utils.pylogger import RankedLogger
 log = RankedLogger(__name__, rank_zero_only=True)
 
 
-@hydra.main(version_base="1.3", config_path="../configs", config_name="config")
+@hydra.main(version_base="1.3", config_path="../configs", config_name="train")
 def main(cfg: DictConfig) -> None:
     if cfg.get("seed"):
         log.info(f"Set seed to {cfg.seed}")
@@ -131,7 +132,15 @@ def main(cfg: DictConfig) -> None:
 
     if cfg.run_test:
         log.info("Start testing")
-        trainer.test(ckpt_path="best", datamodule=dm)
+        # trainer.test(ckpt_path="best", datamodule=dm)
+        trainer.test(model=module, datamodule=dm)
+
+    for logger in module.loggers:
+        if isinstance(logger, WandbLogger):
+            import wandb
+
+            wandb.finish(quiet=True)
+            break
 
 
 if __name__ == "__main__":
