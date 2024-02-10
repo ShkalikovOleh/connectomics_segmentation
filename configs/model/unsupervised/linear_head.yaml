@@ -1,9 +1,11 @@
 # @package model
 
+backbone_out_feat: ???
+
 head:
   _target_: torch.nn.Sequential
   _args_:
   - _target_: torch.nn.Flatten
   - _target_: torch.nn.Linear
-    in_features: 46656
+    in_features: ${model.backbone_out_feat}
     out_features: 1

@@ -14,7 +14,6 @@ vae:
         unflattened_size: [64, 64, 64]
 
   latent_dim: 512
-  # enc_out_feat_dim: 262144
-  enc_out_feat_dim: 46656
+  enc_out_feat_dim: ???
 
 kl_loss_weight: 0.5

@@ -1,0 +1,7 @@
+defaults:
+  - model_checkpoint
+  - early_stopping
+  - _self_
+
+model_checkpoint:
+  monitor: "val/loss"

@@ -1,13 +1,13 @@
 defaults:
+  - _self_
   - data: labeled_data
   - model: default
   - loggers: default
   - trainer: default
   - paths: default
   - hydra: default
-  - callbacks: default
+  - callbacks: supervised
   - experiment: null
-  - _self_
 
 task_name: train
 
