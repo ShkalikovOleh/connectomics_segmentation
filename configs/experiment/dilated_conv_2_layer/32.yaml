@@ -1,0 +1,16 @@
+# @package _global_
+
+defaults:
+   - /model/shared/dilated_conv_2_layer
+   - /model/supervised/linear_head
+
+trainer:
+  max_time: "00:11:45:00"
+
+data:
+  size_power: 5
+  devel_batch_size: 512
+  train_batch_size: 256
+
+model:
+  backbone_out_feat: 64

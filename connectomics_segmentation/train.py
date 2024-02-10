@@ -21,6 +21,7 @@ from connectomics_segmentation.utils.instantiators import (
 )
 from connectomics_segmentation.utils.logging_utils import log_hyperparameters
 from connectomics_segmentation.utils.pylogger import RankedLogger
+from connectomics_segmentation.utils.resolvers import register_custom_resolvers
 
 log = RankedLogger(__name__, rank_zero_only=True)
 
@@ -147,5 +148,6 @@ def main(cfg: DictConfig) -> None:
             break
 
 
+register_custom_resolvers()
 if __name__ == "__main__":
     main()

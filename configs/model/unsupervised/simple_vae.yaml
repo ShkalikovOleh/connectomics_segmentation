@@ -6,12 +6,15 @@ vae:
     _target_: torch.nn.Sequential
     _args_:
       - _target_: torch.nn.Linear
-        in_features: 512
-        out_features: 262144
+        in_features: ${model.vae.latent_dim}
+        out_features: ${prod_list:[${ipow:2,${data.size_power}}, ${ipow:2,${data.size_power}}, ${ipow:2,${data.size_power}}]}
       - _target_: torch.nn.Unflatten
         _convert_ : partial
         dim: 1
-        unflattened_size: [64, 64, 64]
+        unflattened_size:
+          - ${ipow:2,${data.size_power}}
+          - ${ipow:2,${data.size_power}}
+          - ${ipow:2,${data.size_power}}
 
   latent_dim: 512
   enc_out_feat_dim: ???

@@ -1,0 +1,24 @@
+# @package _global_
+
+defaults:
+  - /model/shared/dilated_conv_2_layer
+  - /model/unsupervised/simple_vae
+  - override /model/loss: mse
+  - override /data: raw_data
+  - override /callbacks: unsupervised
+
+trainer:
+  max_time: "00:11:45:00"
+
+data:
+  size_power: 5
+  devel_batch_size: 1024
+  train_batch_size: 512
+
+model:
+  vae:
+    encoder: ${model.backbone}
+    enc_out_feat_dim: 64
+
+supervised: False
+run_test: False

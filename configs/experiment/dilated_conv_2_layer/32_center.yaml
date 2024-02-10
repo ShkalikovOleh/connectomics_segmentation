@@ -1,0 +1,22 @@
+# @package _global_
+
+defaults:
+  - /model/shared/dilated_conv_2_layer
+  - /model/unsupervised/linear_head
+  - override /model/loss: mse
+  - override /data: raw_data
+  - override /callbacks: unsupervised
+
+trainer:
+  max_time: "00:11:45:00"
+
+data:
+  size_power: 5
+  devel_batch_size: 1024
+  train_batch_size: 512
+
+model:
+  backbone_out_feat: 64
+
+supervised: False
+run_test: False
