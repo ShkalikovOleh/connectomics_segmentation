@@ -1,5 +1,0 @@
-# @package model
-
-defaults:
-  - _self_
-  - linear_head

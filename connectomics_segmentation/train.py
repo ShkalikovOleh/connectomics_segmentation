@@ -132,8 +132,12 @@ def main(cfg: DictConfig) -> None:
 
     if cfg.run_test:
         log.info("Start testing")
-        # trainer.test(ckpt_path="best", datamodule=dm)
-        trainer.test(model=module, datamodule=dm)
+        if trainer.global_rank == 0:
+            ckpt_path = trainer.checkpoint_callback.best_model_path
+            trainer = instantiate(
+                cfg.trainer, logger=loggers, callbacks=callbacks, devices=1
+            )
+            trainer.test(model=module, datamodule=dm, ckpt_path=ckpt_path)
 
     for logger in module.loggers:
         if isinstance(logger, WandbLogger):
