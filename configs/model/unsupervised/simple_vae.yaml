@@ -17,6 +17,6 @@ vae:
           - ${ipow:2,${data.size_power}}
 
   latent_dim: 512
-  enc_out_feat_dim: ???
+  enc_out_feat_dim: ${model.backbone_out_feat}
 
 kl_loss_weight: 0.5

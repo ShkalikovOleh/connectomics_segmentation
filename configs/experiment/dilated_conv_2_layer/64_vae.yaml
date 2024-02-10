@@ -18,7 +18,7 @@ data:
 model:
   vae:
     encoder: ${model.backbone}
-    enc_out_feat_dim: 46656
+  backbone_out_feat: 46656
 
 supervised: False
 run_test: False
