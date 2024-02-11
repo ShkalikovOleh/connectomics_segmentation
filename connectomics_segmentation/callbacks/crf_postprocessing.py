@@ -159,10 +159,7 @@ class DenseCRFPostprocessingCallback(Callback):
                     },
                 )
 
-                logger.experiment.log(
-                    {log_name: [mask_img]},
-                    step=trainer.global_step,
-                )
+                logger.experiment.log({log_name: [mask_img]})
 
         if self.calculate_metrics:
             if not np.all(true_labels == self.n_classes):
