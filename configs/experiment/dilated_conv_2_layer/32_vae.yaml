@@ -1,14 +1,12 @@
 # @package _global_
 
 defaults:
-  - /model/shared/dilated_conv_2_layer
+  - /model/backbone/dilated_conv_2_layer
   - /model/unsupervised/simple_vae
   - override /model/loss: mse
   - override /data: raw_data
   - override /callbacks: unsupervised
-
-trainer:
-  max_time: "00:11:45:00"
+  - override /trainer: unsupervised_fp32
 
 data:
   size_power: 5

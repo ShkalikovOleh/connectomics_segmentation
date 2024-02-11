@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - loss: ce
-  - shared/dilated_conv_2_layer
+  - backbone/dilated_conv_2_layer
   - supervised/linear_head
 
 num_classes: 6

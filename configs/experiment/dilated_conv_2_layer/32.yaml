@@ -1,16 +1,14 @@
 # @package _global_
 
 defaults:
-   - /model/shared/dilated_conv_2_layer
-   - /model/supervised/linear_head
-
-trainer:
-  max_time: "00:11:45:00"
+  - /model/backbone/dilated_conv_2_layer
+  - /model/supervised/linear_head
+  - override /trainer: supervised_fp32
 
 data:
   size_power: 5
-  devel_batch_size: 512
-  train_batch_size: 256
+  devel_batch_size: 2048
+  train_batch_size: 1024
 
 model:
   backbone_out_feat: 64
