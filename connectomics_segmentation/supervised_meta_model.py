@@ -173,7 +173,7 @@ class SupervisedMetaModel(LightningModule):
             self.log_test_metrics = True
             self.test_metrics.update(preds, target)
 
-        return {"predictions": preds.detach().cpu()}
+        return {"predictions": torch.softmax(preds.detach().cpu(), dim=1)}
 
     def on_test_epoch_end(self) -> None:
         if self.log_test_metrics:
