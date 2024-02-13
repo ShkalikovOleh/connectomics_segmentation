@@ -98,7 +98,7 @@ def main(cfg: DictConfig) -> None:
                 model=model,
                 recon_loss=loss,
                 optimizer_factory=optim_factory,
-                kl_loss_weight=cfg.model.kl_loss_weight,
+                kl_loss_weight=cfg.model.vae.kl_loss_weight,
                 lr_scheduler_factory=sched_factory,
                 compile_model=cfg.model.compile_model,
             )

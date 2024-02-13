@@ -7,17 +7,18 @@ vae:
       _target_: torch.nn.Sequential
       _args_:
         - _target_: torch.nn.Linear
-          in_features: ${model.vae.latent_dim}
-          out_features: ${prod_list:[${ipow:2,${data.size_power}}, ${ipow:2,${data.size_power}}, ${ipow:2,${data.size_power}}]}
+          in_features: ${model.vae.net.latent_dim}
+          out_features: ${ipow:${ipow:2,${data.size_power}},3}
         - _target_: torch.nn.Unflatten
           _convert_ : partial
           dim: 1
           unflattened_size:
+            - 1
             - ${ipow:2,${data.size_power}}
             - ${ipow:2,${data.size_power}}
             - ${ipow:2,${data.size_power}}
 
     latent_dim: 512
-    enc_out_feat_dim: ${model.backbone.out_feat}
+    enc_out_feat_dim: ${prod_list:[${ipow:${model.backbone.out_spatial_shape},3}, ${model.backbone.out_feat}]}
 
-kl_loss_weight: 0.5
+  kl_loss_weight: 0.5

@@ -1,0 +1,26 @@
+# @package _global_
+
+defaults:
+  - override /model/backbone: dilated_conv_2_layer
+  - override /model/supervised: null
+  - override /model/unsupervised: simple_vae
+  - override /model/loss: mse
+  - override /data: raw_data
+  - override /callbacks: unsupervised
+  - override /trainer: unsupervised_fp32
+
+data:
+  size_power: 5
+  devel_batch_size: 512
+  train_batch_size: 256
+  subvolume_size: 1
+
+model:
+  backbone:
+    out_spatial_shape: 1
+  vae:
+    net:
+      encoder: ${model.backbone.net}
+
+supervised: False
+run_test: False
