@@ -196,12 +196,6 @@ class DenseCRFPostprocessingCallback(Callback):
             if is_filled:
                 self.__apply_crf_and_log(trainer, pl_module)
                 self._num_image += 1
-
-                from matplotlib import pyplot as plt
-
-                plt.imshow(self._gt_aggr.get_volume()[0, 0])
-                plt.show()
-
             else:
                 break
 
