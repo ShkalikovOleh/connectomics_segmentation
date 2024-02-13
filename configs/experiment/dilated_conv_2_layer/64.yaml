@@ -1,14 +1,18 @@
 # @package _global_
 
 defaults:
-  - /model/backbone/dilated_conv_2_layer
-  - /model/supervised/linear_head
+  - override /model/backbone: dilated_conv_2_layer
+  - override /model/unsupervised: null
+  - override /model/supervised: linear_head
   - override /trainer: supervised_fp32
 
 data:
   size_power: 6
   devel_batch_size: 512
   train_batch_size: 256
+  train_subvolume_size: 1
+  devel_subvolume_size: 1
 
 model:
-  backbone_out_feat: 46656
+  backbone:
+    out_spatial_shape: 9

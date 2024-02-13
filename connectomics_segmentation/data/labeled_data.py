@@ -30,6 +30,7 @@ class LabeledDataset(Dataset):
         x_range: Tuple[int, int],
         y_range: Tuple[int, int],
         z_range: Tuple[int, int],
+        subvolume_size: int = 1,
         size_power: int = 6,
         padding_mode: str = "constant",
         transforms: Any = None,
@@ -43,25 +44,35 @@ class LabeledDataset(Dataset):
             dtype=np.int32,
         )
         assert np.any(extent == 1), "One of the dimension shoud have size 1"
+        axis_order = np.argsort(extent)
+
+        tiling_padding = np.array(
+            [
+                (subvolume_size - s % subvolume_size) % subvolume_size if s != 1 else 0
+                for s in extent
+            ]
+        )
+        tiling_padding = tiling_padding[axis_order]
 
         voxel_size = 2**size_power
-        batch_extent = (voxel_size, voxel_size, voxel_size)
 
         with tifffile.TiffFile(raw_data_path) as raw_data_tif:
             raw_data = raw_data_tif.asarray()
 
+            raw_data = raw_data.transpose(axis_order)
+
             half_size = voxel_size // 2
             paddings = []
-            ranges = [x_range, y_range, z_range]
+            ranges = np.asarray([x_range, y_range, z_range])[axis_order]
             slices = []
             for i, range in enumerate(ranges):
-                padding = [0, 0]
+                padding = [0, tiling_padding[i]]
                 dim_size = raw_data.shape[i]
 
                 if range[0] < half_size:
                     padding[0] = half_size - range[0]
                 if dim_size < range[1] + half_size - 1:
-                    padding[1] = range[1] + half_size - 1 - dim_size
+                    padding[1] += range[1] + half_size - 1 - dim_size
 
                 paddings.append(tuple(padding))
 
@@ -77,42 +88,59 @@ class LabeledDataset(Dataset):
             raw_data = (raw_data / 255).astype(np.float32)
 
             # pad if labeled data is on the edge of the whole data cube
-            padded_raw_data = np.pad(
-                raw_data, pad_width=paddings, mode=padding_mode  # type: ignore
-            )
-            del raw_data
-            log.info(f"Add padding {paddings} to raw data for {labels_path}")
+            if np.any(paddings):
+                raw_data = np.pad(
+                    raw_data, pad_width=paddings, mode=padding_mode  # type: ignore
+                )
+                log.info(f"Add padding {paddings} to raw data for {labels_path}")
 
-            batches = patchify(padded_raw_data, batch_extent)
+            data_subvol_size = voxel_size + subvolume_size - 1
+            batch_extent = (voxel_size, data_subvol_size, data_subvol_size)
+            batches = patchify(raw_data, batch_extent, subvolume_size)
+
             self.raw_data_batches = batches
 
         log.info(f"Loading {labels_path} file with labels")
         with tifffile.TiffFile(labels_path) as labels_tif:
             labels = labels_tif.asarray()
-            zero_dim = np.argmin(extent)
-            labels = np.expand_dims(labels, zero_dim)
+            labels = np.expand_dims(labels, axis_order[0])
+            labels = labels.transpose(axis_order)
 
             assert np.array_equal(
-                extent, labels.shape  # type: ignore
+                extent[axis_order], labels.shape  # type: ignore
             ), "Provided ranges and the size of labels array should match"
 
-            self.labels = np.where(labels == 0, 7, labels) - 1
+            labels = np.where(labels == 0, 7, labels) - 1
+            if np.any(tiling_padding):
+                pads = tuple((0, p) for p in tiling_padding)
+                labels = np.pad(  # type: ignore
+                    labels, pad_width=pads, mode="constant", constant_values=6
+                )
+
+            NX, NY, NZ, _, _, _ = self.raw_data_batches.shape
+            batch_shape = (1, subvolume_size, subvolume_size)
+            self.labels = labels.reshape((NX, NY, NZ, *batch_shape))
 
     def __len__(self) -> int:
         sx, sy, sz, _, _, _ = self.raw_data_batches.shape
         return sx * sy * sz
 
-    def __getitem__(self, idx: int) -> dict[str, torch.Tensor | np.int8]:
+    def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
         sx, sy, sz, _, _, _ = self.raw_data_batches.shape
         real_idx = np.unravel_index(idx, (sx, sy, sz))
 
         data = self.raw_data_batches[real_idx]
-        label = self.labels[real_idx]
+        labels = self.labels[real_idx]
 
         if self.transforms:
-            data = self.transforms(image=data)["image"]
+            augm_data = self.transforms(image=data, mask=labels)
+            data = augm_data["image"]
+            labels = augm_data["mask"]
 
-        batch = {"data": torch.from_numpy(data).unsqueeze(0), "label": label}
+        batch = {
+            "data": torch.from_numpy(data).unsqueeze(0),
+            "label": torch.LongTensor(labels.copy()),
+        }
 
         return batch
 
@@ -134,6 +162,7 @@ class LabeledDataModule(LightningDataModule):
         ds_cfgs: ListConfig,
         size_power: int,
         padding_mode: str,
+        subvolume_size: int,
         raw_data_path: str | os.PathLike,
     ) -> ConcatDataset:
         datasets = []
@@ -145,6 +174,7 @@ class LabeledDataModule(LightningDataModule):
                     cfg.x_range,
                     cfg.y_range,
                     cfg.z_range,
+                    subvolume_size,
                     size_power,
                     padding_mode,
                     transforms,
@@ -166,6 +196,7 @@ class LabeledDataModule(LightningDataModule):
                 self.cfg.train_ds_configs,
                 self.cfg.size_power,
                 self.cfg.padding_mode,
+                self.cfg.train_subvolume_size,
                 self.cfg.raw_data_path,
             )
         if stage == "validate" or stage == "fit":
@@ -174,6 +205,7 @@ class LabeledDataModule(LightningDataModule):
                 self.cfg.valid_ds_configs,
                 self.cfg.size_power,
                 self.cfg.padding_mode,
+                self.cfg.devel_subvolume_size,
                 self.cfg.raw_data_path,
             )
         elif stage == "test":
@@ -182,6 +214,7 @@ class LabeledDataModule(LightningDataModule):
                 self.cfg.test_ds_configs,
                 self.cfg.size_power,
                 self.cfg.padding_mode,
+                self.cfg.devel_subvolume_size,
                 self.cfg.raw_data_path,
             )
 

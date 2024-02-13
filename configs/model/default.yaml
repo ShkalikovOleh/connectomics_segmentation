@@ -1,8 +1,9 @@
 defaults:
   - _self_
   - loss: ce
-  - backbone/dilated_conv_2_layer
-  - supervised/linear_head
+  - backbone: dilated_conv_2_layer
+  - supervised: linear_head
+  - unsupervised: null
 
 num_classes: 6
 compile_model: True

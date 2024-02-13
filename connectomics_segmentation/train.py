@@ -55,8 +55,8 @@ def main(cfg: DictConfig) -> None:
 
     if cfg.supervised:
         log.info("Instantiate model")
-        backbone_model = instantiate(cfg.model.backbone)
-        head_model = instantiate(cfg.model.head)
+        backbone_model = instantiate(cfg.model.backbone.net)
+        head_model = instantiate(cfg.model.head.net)
 
         if cfg.get("pretrained_ckpt_path") and not cfg.get("ckpt_path"):
             backbone_model = load_pretrained_backbone(
@@ -90,7 +90,9 @@ def main(cfg: DictConfig) -> None:
     else:
         log.info("Instantiate model")
         if cfg.model.get("vae"):
-            model = instantiate(cfg.model.vae)
+            model = instantiate(cfg.model.vae.net)
+
+            cfg.data.subvolume_size = 1
 
             module = VAEMetaModel(
                 model=model,
@@ -103,8 +105,8 @@ def main(cfg: DictConfig) -> None:
 
             hparams["model"] = model
         else:
-            backbone_model = instantiate(cfg.model.backbone)
-            head_model = instantiate(cfg.model.head)
+            backbone_model = instantiate(cfg.model.backbone.net)
+            head_model = instantiate(cfg.model.head.net)
 
             module = CenterVoxelRegressionMetaModel(
                 backbone_model=backbone_model,
@@ -112,6 +114,7 @@ def main(cfg: DictConfig) -> None:
                 loss=loss,
                 optimizer_factory=optim_factory,
                 lr_scheduler_factory=sched_factory,
+                subvolume_size=cfg.data.subvolume_size,
                 compile_model=cfg.model.compile_model,
             )
 

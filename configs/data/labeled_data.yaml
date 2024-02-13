@@ -51,6 +51,8 @@ raw_data_path: ${paths.data_dir}/raw_data/volumedata.tif
 size_power: 6
 train_batch_size: 64
 devel_batch_size: 128
+train_subvolume_size: 20
+devel_subvolume_size: 25
 padding_mode: constant
 num_workers: 15
 class_names:
@@ -62,6 +64,6 @@ class_names:
   - vesicle
 
 augmentations:
-  - _target_: volumentations.RandomRotate90
-    p: 0.95
+  # - _target_: volumentations.RandomRotate90
+  #   p: 0.95
   - _target_: volumentations.Flip

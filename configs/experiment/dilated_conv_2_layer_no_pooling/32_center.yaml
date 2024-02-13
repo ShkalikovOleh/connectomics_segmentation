@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - override /model/backbone: dilated_conv_2_layer
+  - override /model/backbone: dilated_conv_2_layer_no_pooling
   - override /model/supervised: null
   - override /model/unsupervised: linear_head
   - override /model/loss: mse
@@ -11,13 +11,13 @@ defaults:
 
 data:
   size_power: 5
-  devel_batch_size: 4096
-  train_batch_size: 2048
-  subvolume_size: 1
+  devel_batch_size: 8
+  train_batch_size: 4
+  subvolume_size: 3
 
 model:
   backbone:
-    out_spatial_shape: 1
+    out_spatial_shape: 22
 
 supervised: False
 run_test: False

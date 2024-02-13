@@ -1,22 +1,23 @@
 # @package model
 
 vae:
-  _target_: connectomics_segmentation.models.VAE
-  decoder:
-    _target_: torch.nn.Sequential
-    _args_:
-      - _target_: torch.nn.Linear
-        in_features: ${model.vae.latent_dim}
-        out_features: ${prod_list:[${ipow:2,${data.size_power}}, ${ipow:2,${data.size_power}}, ${ipow:2,${data.size_power}}]}
-      - _target_: torch.nn.Unflatten
-        _convert_ : partial
-        dim: 1
-        unflattened_size:
-          - ${ipow:2,${data.size_power}}
-          - ${ipow:2,${data.size_power}}
-          - ${ipow:2,${data.size_power}}
+  net:
+    _target_: connectomics_segmentation.models.VAE
+    decoder:
+      _target_: torch.nn.Sequential
+      _args_:
+        - _target_: torch.nn.Linear
+          in_features: ${model.vae.latent_dim}
+          out_features: ${prod_list:[${ipow:2,${data.size_power}}, ${ipow:2,${data.size_power}}, ${ipow:2,${data.size_power}}]}
+        - _target_: torch.nn.Unflatten
+          _convert_ : partial
+          dim: 1
+          unflattened_size:
+            - ${ipow:2,${data.size_power}}
+            - ${ipow:2,${data.size_power}}
+            - ${ipow:2,${data.size_power}}
 
-  latent_dim: 512
-  enc_out_feat_dim: ${model.backbone_out_feat}
+    latent_dim: 512
+    enc_out_feat_dim: ${model.backbone.out_feat}
 
 kl_loss_weight: 0.5

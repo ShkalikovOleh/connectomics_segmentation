@@ -59,7 +59,7 @@ class VAEMetaModel(LightningModule):
     def forward(self, data: torch.Tensor) -> torch.Tensor:
         return self.model(data)
 
-    def _step(self, batch: torch.Tensor, stage: str) -> torch.Tensor:
+    def _step(self, batch: torch.Tensor, stage: str) -> torch.Tensor:        
         mean, logvar = self.model.encode(batch)
         latent = self.model.reparametrize(mean, logvar)
         recon = self.model.decode(latent)
@@ -95,6 +95,7 @@ class CenterVoxelRegressionMetaModel(LightningModule):
         loss: nn.Module,
         optimizer_factory: opt_factory,
         lr_scheduler_factory: lr_sched_factory | None = None,
+        subvolume_size: int = 1,
         dropout_prob: float = 0.3,
         compile_model: bool = True,
     ) -> None:
@@ -107,6 +108,7 @@ class CenterVoxelRegressionMetaModel(LightningModule):
         self.lr_scheduler_factory = lr_scheduler_factory
         self.compile_model = compile_model
         self.dropout_prob = dropout_prob
+        self.subvolume_size = subvolume_size
 
     def setup(self, stage: str) -> None:
         if self.compile_model and stage == "fit":
@@ -141,10 +143,15 @@ class CenterVoxelRegressionMetaModel(LightningModule):
     def _step(self, batch: torch.Tensor, stage: str) -> torch.Tensor:
         # targets are center voxels
         H = batch.shape[2]
-        targets = batch[:, 0, H // 2, H // 2, H // 2].detach().clone().unsqueeze_(1)
+        start_idx = (H - self.subvolume_size + 1) // 2
+        end_idx = start_idx + self.subvolume_size
+        target_view = batch[
+            :, 0, start_idx:end_idx, start_idx:end_idx, start_idx:end_idx
+        ]
+        targets = target_view.detach().clone().unsqueeze_(1)
 
         # mask center voxel and several others randomly
-        batch[:, 0, H // 2, H // 2, H // 2] = 0
+        target_view = 0
         nn.functional.dropout(
             batch, p=self.dropout_prob, training=self.training, inplace=True
         )

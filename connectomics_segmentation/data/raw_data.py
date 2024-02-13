@@ -21,29 +21,49 @@ class RawDataset(Dataset):
         self,
         raw_data_path: str | os.PathLike,
         size_power: int = 6,
-        apply_padding: bool = True,
+        subvolume_size: int = 1,
         padding_mode: str = "symmetric",
     ) -> None:
         super().__init__()
 
         voxel_size = 2**size_power
-        batch_extent = (voxel_size, voxel_size, voxel_size)
+        data_subvol_size = voxel_size + subvolume_size - 1
+        batch_extent = (data_subvol_size, data_subvol_size, data_subvol_size)
 
         with tifffile.TiffFile(raw_data_path) as raw_data_tif:
-            raw_data = raw_data_tif.asarray()
             log.info("Load raw data")
+            raw_data = raw_data_tif.asarray()
+
+            self.tilling_padding = self.__get_tiling_padding(
+                raw_data.shape, subvolume_size
+            )
 
             half_size = voxel_size // 2
-            paddings = tuple((half_size, half_size - 1) for _ in range(3))
+            paddings = tuple(
+                (half_size, half_size - 1 + self.tilling_padding[i]) for i in range(3)
+            )
 
-            if apply_padding:
+            if np.any(paddings):
+                log.info("Add padding to raw data")
                 raw_data = np.pad(
                     raw_data, pad_width=paddings, mode=padding_mode  # type: ignore
                 )
-                log.info("Add padding to raw data")
 
-            self.raw_data_batches = patchify(raw_data, batch_extent)
             log.info("Split raw data into patches")
+            self.raw_data_batches = patchify(raw_data, batch_extent, subvolume_size)
+
+    @staticmethod
+    def __get_tiling_padding(shape, subvolume_size):
+        return np.asarray(
+            [
+                (
+                    (subvolume_size - s % subvolume_size) % subvolume_size
+                    if s != 1
+                    else 0
+                )
+                for s in shape
+            ]
+        )
 
     def __len__(self) -> int:
         sx, sy, sz, _, _, _ = self.raw_data_batches.shape
@@ -79,9 +99,10 @@ class RawDataModule(LightningDataModule):
         dataset = RawDataset(
             self.cfg.raw_data_path,
             self.cfg.size_power,
-            self.cfg.apply_padding,
+            self.cfg.subvolume_size,
             self.cfg.padding_mode,
         )
+        self.tilling_padding = dataset.tilling_padding
 
         sizes = [
             int(math.floor(len(dataset) * frac))
