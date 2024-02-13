@@ -91,8 +91,9 @@ class TestVisualizationCallback(Callback):
         start_idx = (H - self._subvolume_size + 1) // 2
         end_idx = start_idx + self._subvolume_size
         intensities = (
-            batch["data"][:, :, 0:1, start_idx:end_idx, start_idx:end_idx]
+            batch["data"][:, :, start_idx, start_idx:end_idx, start_idx:end_idx]
             .detach()
+            .unsqueeze(2)
             .cpu()
             .numpy()
         )
