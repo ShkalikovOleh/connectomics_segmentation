@@ -7,6 +7,8 @@ from lightning import Callback
 from lightning import pytorch as pl
 from lightning.pytorch.loggers.wandb import WandbLogger
 
+from connectomics_segmentation.utils.aggregator import Aggregator
+
 
 class TestVisualizationCallback(Callback):
     """This callback gather and store all prediction of center voxel class
@@ -15,29 +17,63 @@ class TestVisualizationCallback(Callback):
     Requires from dataloader that it doesn't shuffle the test dataset"""
 
     def __init__(
-        self, image_width: int, image_height: int, label_colors: list[tuple[int]]
+        self,
+        image_width: int,
+        image_height: int,
+        n_classes: int,
+        subvolume_size: int,
+        class_names: list[str] | None = None,
     ):
         super().__init__()
         self.image_height = image_height
         self.image_width = image_width
+        self.n_classes = n_classes
 
-        self._buffer = np.empty(image_height * image_width)
-        self._remain_unfilled = image_width * image_height
+        self._class_names = class_names
+        self._subvolume_size = subvolume_size
+
+        self._proba_aggr = Aggregator(
+            (n_classes, 1, image_height, image_width), np.float32
+        )
+        self._intensities_aggr = Aggregator(
+            (1, 1, image_height, image_width), np.float32
+        )
+        self._gt_aggr = Aggregator((1, 1, image_height, image_width), dtype=np.uint8)
         self._num_image = 1
 
-        self._label2color = np.array(label_colors, dtype=np.uint8)
+    def __log_image(self, pl_module: pl.LightningModule):
+        proba = self._proba_aggr.get_volume()
+        intensities = self._intensities_aggr.get_volume()
 
-    def map_labels_to_color(self, labels: np.ndarray) -> np.ndarray:
-        img_shape = (self.image_height, self.image_width, 3)
-        img = np.zeros(img_shape, dtype=np.uint8)
+        raw_pred_labels = proba.argmax(axis=0)[0]
+        true_labels = self._gt_aggr.get_volume().reshape(
+            (self.image_height, self.image_width)
+        )
+        image = intensities[0, 0]
 
-        for label in range(self._label2color.shape[0]):
-            idx = labels == label
-            img[idx, 0] = self._label2color[label, 0]
-            img[idx, 1] = self._label2color[label, 1]
-            img[idx, 2] = self._label2color[label, 2]
+        if self._class_names:
+            id2class = {i: name for i, name in enumerate(self._class_names)}
+        else:
+            id2class = {i: str(i) for i in range(self.n_classes)}
 
-        return img
+        log_name = f"test/image {self._num_image}"
+        for logger in pl_module.loggers:
+            if isinstance(logger, WandbLogger):
+                mask_img = wandb.Image(
+                    image,
+                    masks={
+                        "raw_predictions": {
+                            "mask_data": raw_pred_labels,
+                            "class_labels": id2class,
+                        },
+                        "ground_truth": {
+                            "mask_data": true_labels,
+                            "class_labels": id2class,
+                        },
+                    },
+                )
+
+                logger.experiment.log({log_name: [mask_img]})
 
     def on_test_batch_end(
         self,
@@ -48,32 +84,26 @@ class TestVisualizationCallback(Callback):
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        preds = outputs["predictions"]
-        pred_labels = torch.argmax(preds, dim=1).numpy()
-        N_preds = pred_labels.size
+        proba = outputs["predictions"].numpy()
+        true_labels = batch["label"].detach().cpu().unsqueeze(1).numpy()
 
-        start_idx = -self._remain_unfilled
-        if self._remain_unfilled <= N_preds:  # type: ignore # noqa
-            self._buffer[start_idx:] = pred_labels[:-start_idx]
-            pred_labels = pred_labels[-start_idx:]
+        H = batch["data"].shape[3]
+        start_idx = (H - self._subvolume_size + 1) // 2
+        end_idx = start_idx + self._subvolume_size
+        intensities = (
+            batch["data"][:, :, 0:1, start_idx:end_idx, start_idx:end_idx]
+            .detach()
+            .cpu()
+            .numpy()
+        )
 
-            image = self.map_labels_to_color(
-                self._buffer.reshape((self.image_height, self.image_width))
-            )
+        while len(proba) > 0:
+            is_filled, proba = self._proba_aggr.add_batch(proba)
+            _, intensities = self._intensities_aggr.add_batch(intensities)
+            _, true_labels = self._gt_aggr.add_batch(true_labels)
 
-            caption = f"test/image {self._num_image}"
-            for logger in pl_module.loggers:
-                if isinstance(logger, WandbLogger):
-                    logger.experiment.log(
-                        {caption: [wandb.Image(image, caption=caption)]},
-                        step=trainer.global_step,
-                    )
-
-            N_preds += start_idx
-            self._remain_unfilled = self.image_height * self.image_width
-            start_idx = -self._remain_unfilled
-            self._num_image += 1
-
-        end_idx = -self._remain_unfilled + N_preds
-        self._buffer[start_idx:end_idx] = pred_labels
-        self._remain_unfilled -= N_preds
+            if is_filled:
+                self.__log_image(pl_module)
+                self._num_image += 1
+            else:
+                break
