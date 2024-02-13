@@ -14,3 +14,4 @@ crf_postprocessing:
   compat_position: 1
   compat_bilateral: 1
   num_steps: 10
+  subvolume_size: ${data.devel_subvolume_size}

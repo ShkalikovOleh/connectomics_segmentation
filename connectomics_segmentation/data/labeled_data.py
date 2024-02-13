@@ -119,7 +119,6 @@ class LabeledDataset(Dataset):
 
             NX, NY, NZ, _, _, _ = self.raw_data_batches.shape
             batch_shape = (1, subvolume_size, subvolume_size)
-            # self.labels = labels.reshape((NX, NY, NZ, *batch_shape))
             self.labels = patchify(labels, batch_shape, step=subvolume_size)
 
     def __len__(self) -> int:

@@ -16,6 +16,7 @@ from torchmetrics.classification import (
 )
 
 from connectomics_segmentation.postprocessing.crf import apply_crf
+from connectomics_segmentation.utils.aggregator import Aggregator
 
 
 class DenseCRFPostprocessingCallback(Callback):
@@ -34,6 +35,7 @@ class DenseCRFPostprocessingCallback(Callback):
         compat_position: float,
         compat_bilateral: float,
         num_steps: int,
+        subvolume_size: int,
         calculate_metrics: bool = True,
         class_names: list[str] | None = None,
     ):
@@ -48,23 +50,21 @@ class DenseCRFPostprocessingCallback(Callback):
         self._compat_position = compat_position
         self._compat_bilateral = compat_bilateral
         self._num_steps = num_steps
+        self._subvolume_size = subvolume_size
 
-        self._proba_buffer = np.empty(
-            (self.n_classes, image_height * image_width), dtype=np.float32
+        self._proba_aggr = Aggregator(
+            (n_classes, 1, image_height, image_width), np.float32
         )
-        self._intensities_buffer = np.empty(
-            image_height * image_width, dtype=np.float32
+        self._intensities_aggr = Aggregator(
+            (1, 1, image_height, image_width), np.float32
         )
-        self._remain_unfilled = image_width * image_height
+        self._gt_aggr = Aggregator((1, 1, image_height, image_width), dtype=np.uint8)
         self._num_image = 1
 
         self.calculate_metrics = calculate_metrics
         self._metrics_ready = False
         if calculate_metrics:
             self.metrics = self.create_metrics()
-            self._true_label_buffer = np.empty(
-                image_height * image_width, dtype=np.uint8
-            )
 
     def create_metrics(self) -> MetricCollection:
         overall_metrics_kwargs = {
@@ -109,12 +109,8 @@ class DenseCRFPostprocessingCallback(Callback):
         return metrics
 
     def __apply_crf_and_log(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
-        proba = self._proba_buffer.reshape(
-            (self.n_classes, self.image_height, self.image_width, 1)
-        )
-        intensities = self._intensities_buffer.reshape(
-            (1, self.image_height, self.image_width, 1)
-        )
+        proba = self._proba_aggr.get_volume()
+        intensities = self._intensities_aggr.get_volume()
 
         crf_labels = apply_crf(
             proba=proba,
@@ -127,11 +123,11 @@ class DenseCRFPostprocessingCallback(Callback):
         )
 
         crf_labels = crf_labels.reshape((self.image_height, self.image_width))
-        raw_pred_labels = proba.argmax(axis=0)[:, :, 0]
-        true_labels = self._true_label_buffer.reshape(
+        raw_pred_labels = proba.argmax(axis=0)[0]
+        true_labels = self._gt_aggr.get_volume().reshape(
             (self.image_height, self.image_width)
         )
-        image = intensities[0]
+        image = intensities[0, 0]
 
         if self._class_names:
             id2class = {i: name for i, name in enumerate(self._class_names)}
@@ -180,36 +176,34 @@ class DenseCRFPostprocessingCallback(Callback):
         dataloader_idx: int = 0,
     ) -> None:
         proba = outputs["predictions"].numpy()
-        H = batch["data"].shape[-1]
-        intensity = batch["data"][:, 0, H // 2, H // 2, H // 2].detach().cpu().numpy()
-        true_labels = batch["label"].detach().cpu().numpy()
+        true_labels = batch["label"].detach().cpu().unsqueeze(1).numpy()
 
-        N_preds = intensity.size
+        H = batch["data"].shape[3]
+        start_idx = (H - self._subvolume_size + 1) // 2
+        end_idx = start_idx + self._subvolume_size
+        intensities = (
+            batch["data"][:, :, 0:1, start_idx:end_idx, start_idx:end_idx]
+            .detach()
+            .cpu()
+            .numpy()
+        )
 
-        start_idx = -self._remain_unfilled
-        if self._remain_unfilled <= N_preds:  # type: ignore # noqa
-            self._intensities_buffer[start_idx:] = intensity[:-start_idx]
-            self._proba_buffer[:, start_idx:] = proba[:-start_idx].T
-            self._true_label_buffer[start_idx:] = true_labels[:-start_idx]  # type: ignore # noqa
+        while len(proba) > 0:
+            is_filled, proba = self._proba_aggr.add_batch(proba)
+            _, intensities = self._intensities_aggr.add_batch(intensities)
+            _, true_labels = self._gt_aggr.add_batch(true_labels)
 
-            intensity = intensity[-start_idx:]
-            proba = proba[-start_idx:]
-            true_labels = true_labels[-start_idx:]  # type: ignore # noqa
+            if is_filled:
+                self.__apply_crf_and_log(trainer, pl_module)
+                self._num_image += 1
 
-            self.__apply_crf_and_log(trainer, pl_module)
+                from matplotlib import pyplot as plt
 
-            N_preds += start_idx
-            self._remain_unfilled = self.image_height * self.image_width
-            start_idx = -self._remain_unfilled
-            self._num_image += 1
+                plt.imshow(self._gt_aggr.get_volume()[0, 0])
+                plt.show()
 
-        end_idx = -self._remain_unfilled + N_preds
-
-        self._intensities_buffer[start_idx:end_idx] = intensity
-        self._proba_buffer[:, start_idx:end_idx] = proba.T
-        self._true_label_buffer[start_idx:end_idx] = true_labels  # type: ignore # noqa
-
-        self._remain_unfilled -= N_preds
+            else:
+                break
 
     def on_test_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         if self._metrics_ready:
