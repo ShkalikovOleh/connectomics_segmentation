@@ -167,3 +167,5 @@ slurm_template.sh
 outputs
 logs
 scripts/config_local.sh
+
+local.yaml
