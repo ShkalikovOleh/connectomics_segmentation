@@ -9,6 +9,10 @@ from lightning import LightningDataModule
 from omegaconf import DictConfig, ListConfig
 from patchify import patchify
 from torch.utils.data import ConcatDataset, DataLoader, Dataset
+from connectomics_segmentation.utils.paddings import (
+    calculate_full_padding_and_slices,
+    calculate_tiling_padding,
+)
 
 from connectomics_segmentation.utils.pylogger import RankedLogger
 
@@ -46,45 +50,22 @@ class LabeledDataset(Dataset):
         assert np.any(extent == 1), "One of the dimension shoud have size 1"
         axis_order = np.argsort(extent)
 
-        tiling_padding = np.array(
-            [
-                (subvolume_size - s % subvolume_size) % subvolume_size if s != 1 else 0
-                for s in extent
-            ]
-        )
-        tiling_padding = tiling_padding[axis_order]
-
         voxel_size = 2**size_power
 
         with tifffile.TiffFile(raw_data_path) as raw_data_tif:
             raw_data = raw_data_tif.asarray()
 
-            raw_data = raw_data.transpose(axis_order)
-
-            half_size = voxel_size // 2
-            paddings = []
-            ranges = np.asarray([x_range, y_range, z_range])[axis_order]
-            slices = []
-            for i, range in enumerate(ranges):
-                padding = [0, tiling_padding[i]]
-                dim_size = raw_data.shape[i]
-
-                if range[0] < half_size:
-                    padding[0] = half_size - range[0]
-                if dim_size < range[1] + half_size - 1:
-                    padding[1] += range[1] + half_size - 1 - dim_size
-
-                paddings.append(tuple(padding))
-
-                slices.append(
-                    slice(
-                        range[0] - half_size + padding[0],
-                        range[1] + padding[0] + half_size - 1,
-                    )
-                )
+            paddings, slices = calculate_full_padding_and_slices(
+                raw_data.shape,
+                voxel_size=voxel_size,
+                subvolume_size=subvolume_size,
+                x_range=x_range,
+                y_range=y_range,
+                z_range=z_range,
+            )
 
             # take only data for which we have labels
-            raw_data = raw_data[tuple(slices)]
+            raw_data = raw_data[slices]
             raw_data = (raw_data / 255).astype(np.float32)
 
             # pad if labeled data is on the edge of the whole data cube
@@ -94,11 +75,13 @@ class LabeledDataset(Dataset):
                 )
                 log.info(f"Add padding {paddings} to raw data for {labels_path}")
 
+            # sort axis to make all items from different slices equally
+            # shaped for simple batching from concatenated dataset
+            raw_data = raw_data.transpose(axis_order)
+
             data_subvol_size = voxel_size + subvolume_size - 1
             batch_extent = (voxel_size, data_subvol_size, data_subvol_size)
-            batches = patchify(raw_data, batch_extent, subvolume_size)
-
-            self.raw_data_batches = batches
+            self.raw_data_batches = patchify(raw_data, batch_extent, subvolume_size)
 
         log.info(f"Loading {labels_path} file with labels")
         with tifffile.TiffFile(labels_path) as labels_tif:
@@ -110,6 +93,10 @@ class LabeledDataset(Dataset):
                 extent[axis_order], labels.shape  # type: ignore
             ), "Provided ranges and the size of labels array should match"
 
+            tiling_padding = calculate_tiling_padding(
+                subvolume_size, extent[axis_order]
+            )
+
             labels = np.where(labels == 0, 7, labels) - 1
             if np.any(tiling_padding):
                 pads = tuple((0, p) for p in tiling_padding)
@@ -117,7 +104,6 @@ class LabeledDataset(Dataset):
                     labels, pad_width=pads, mode="constant", constant_values=6
                 )
 
-            NX, NY, NZ, _, _, _ = self.raw_data_batches.shape
             batch_shape = (1, subvolume_size, subvolume_size)
             self.labels = patchify(labels, batch_shape, step=subvolume_size)
 

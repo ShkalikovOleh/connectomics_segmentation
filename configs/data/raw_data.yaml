@@ -1,7 +1,7 @@
 train_batch_size: 64
 devel_batch_size: 128
 raw_data_path: ${paths.data_dir}/raw_data/volumedata.tif
-size_power: 6
+size_power: 5
 apply_padding: True
 padding_mode: "symmetric"
 train_val_test_procents: [0.8, 0.1, 0.1]

@@ -48,7 +48,7 @@ test_ds_configs:
     z_range: [1532, 1533]
 
 raw_data_path: ${paths.data_dir}/raw_data/volumedata.tif
-size_power: 6
+size_power: 5
 train_batch_size: 64
 devel_batch_size: 128
 train_subvolume_size: 20

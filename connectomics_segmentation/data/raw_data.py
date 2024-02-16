@@ -8,6 +8,7 @@ from lightning import LightningDataModule
 from omegaconf import DictConfig
 from patchify import patchify
 from torch.utils.data import DataLoader, Dataset
+from connectomics_segmentation.utils.paddings import calculate_tiling_padding
 
 from connectomics_segmentation.utils.pylogger import RankedLogger
 
@@ -34,36 +35,23 @@ class RawDataset(Dataset):
             log.info("Load raw data")
             raw_data = raw_data_tif.asarray()
 
-            self.tilling_padding = self.__get_tiling_padding(
-                raw_data.shape, subvolume_size
-            )
-
             half_size = voxel_size // 2
-            paddings = tuple(
-                (half_size, half_size - 1 + self.tilling_padding[i]) for i in range(3)
+            tiling_padding = calculate_tiling_padding(
+                subvolume_size, np.asarray(raw_data.shape) + voxel_size - 1
             )
 
-            if np.any(paddings):
+            self.paddings = tuple(
+                (half_size, half_size - 1 + tiling_padding[i]) for i in range(3)
+            )
+
+            if np.any(self.paddings):
                 log.info("Add padding to raw data")
                 raw_data = np.pad(
-                    raw_data, pad_width=paddings, mode=padding_mode  # type: ignore
+                    raw_data, pad_width=self.paddings, mode=padding_mode  # type: ignore
                 )
 
             log.info("Split raw data into patches")
             self.raw_data_batches = patchify(raw_data, batch_extent, subvolume_size)
-
-    @staticmethod
-    def __get_tiling_padding(shape, subvolume_size):
-        return np.asarray(
-            [
-                (
-                    (subvolume_size - s % subvolume_size) % subvolume_size
-                    if s != 1
-                    else 0
-                )
-                for s in shape
-            ]
-        )
 
     def __len__(self) -> int:
         sx, sy, sz, _, _, _ = self.raw_data_batches.shape
@@ -102,7 +90,7 @@ class RawDataModule(LightningDataModule):
             self.cfg.subvolume_size,
             self.cfg.padding_mode,
         )
-        self.tilling_padding = dataset.tilling_padding
+        self.paddings = dataset.paddings
 
         sizes = [
             int(math.floor(len(dataset) * frac))
