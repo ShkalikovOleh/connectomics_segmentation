@@ -8,8 +8,8 @@ from lightning import LightningDataModule
 from omegaconf import DictConfig
 from patchify import patchify
 from torch.utils.data import DataLoader, Dataset
-from connectomics_segmentation.utils.paddings import calculate_tiling_padding
 
+from connectomics_segmentation.utils.paddings import calculate_tiling_padding
 from connectomics_segmentation.utils.pylogger import RankedLogger
 
 from .subdataset import BufferizedRandomSampler, SubDataset

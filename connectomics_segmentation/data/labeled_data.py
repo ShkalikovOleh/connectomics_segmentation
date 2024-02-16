@@ -9,11 +9,11 @@ from lightning import LightningDataModule
 from omegaconf import DictConfig, ListConfig
 from patchify import patchify
 from torch.utils.data import ConcatDataset, DataLoader, Dataset
+
 from connectomics_segmentation.utils.paddings import (
     calculate_full_padding_and_slices,
     calculate_tiling_padding,
 )
-
 from connectomics_segmentation.utils.pylogger import RankedLogger
 
 log = RankedLogger(__name__, rank_zero_only=True)
