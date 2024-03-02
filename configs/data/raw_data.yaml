@@ -7,4 +7,4 @@ padding_mode: "symmetric"
 train_val_test_procents: [0.8, 0.1, 0.1]
 subvolume_size: 32
 num_workers: 15
-sampler_buffer_size: 32768
+sampler_buffer_size: 16192
