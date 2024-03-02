@@ -16,6 +16,3 @@ data:
 model:
   backbone:
     out_spatial_shape: 2
-
-supervised: False
-run_test: False
