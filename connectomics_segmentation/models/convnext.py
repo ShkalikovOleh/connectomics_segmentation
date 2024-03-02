@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from .modules import ConvNextStage
+from .modules import ConvNextStage, LayerNorm
 
 
 class ConvNext(nn.Module):
@@ -22,7 +22,12 @@ class ConvNext(nn.Module):
             for x in torch.linspace(0, drop_path_rate, sum(depths)).split(depths)
         ]
 
-        stages: list[nn.Module] = []
+        patch_layer = nn.Sequential(
+            nn.Conv3d(in_channels, dims[0], kernel_size=patch_size, stride=patch_size),
+            LayerNorm(dims[0], eps=1e-6, data_format="channels_first"),
+        )
+
+        stages: list[nn.Module] = [patch_layer]
         prev_dim = dims[0]
         for i, (depth, dim) in enumerate(zip(depths, dims)):
             stages.append(
@@ -33,8 +38,8 @@ class ConvNext(nn.Module):
                     activation=activation,
                     layer_scale_init_value=layer_scale_init_value,
                     drop_path_rates=dp_rates[i],
-                    down_kernel_size=patch_size if i == 0 else 2,
-                    down_stride=patch_size if i == 0 else 2,
+                    down_kernel_size=1 if i == 0 else 2,
+                    down_stride=1 if i == 0 else 2,
                 )
             )
             prev_dim = dim
