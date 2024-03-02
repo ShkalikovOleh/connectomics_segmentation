@@ -2,9 +2,8 @@ _target_: lightning.Trainer
 
 default_root_dir: ${paths.output_dir}
 
-max_epochs: 10
+max_epochs: 30
 max_time: "00:11:45:00"
 
-trainer:
-  limit_train_batches: 32768
-  limit_val_batches: 512
+limit_train_batches: 32768
+limit_val_batches: 512
