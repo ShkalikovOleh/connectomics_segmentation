@@ -1,5 +1,7 @@
 from torch import nn
 
+from .layer_norm import LayerNorm
+
 
 def get_norm_layer(norm: str, n_features: int) -> nn.Module:
     match norm:
@@ -9,6 +11,8 @@ def get_norm_layer(norm: str, n_features: int) -> nn.Module:
             norm_layer = nn.BatchNorm3d(n_features)
         case "instance":
             norm_layer = nn.InstanceNorm3d(n_features)
+        case "layer":
+            norm_layer = LayerNorm(n_features, data_format="channels_first")
         case _:
             raise ValueError(f"Don't support {norm} normalization")
     return norm_layer
