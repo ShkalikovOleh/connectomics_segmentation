@@ -8,7 +8,7 @@ import volumentations
 from lightning import LightningDataModule
 from omegaconf import DictConfig, ListConfig
 from patchify import patchify
-from torch.utils.data import ConcatDataset, DataLoader, Dataset
+from torch.utils.data import ConcatDataset, DataLoader, Dataset, default_collate
 
 from connectomics_segmentation.utils.paddings import (
     calculate_full_padding_and_slices,
@@ -131,6 +131,30 @@ class LabeledDataset(Dataset):
         return batch
 
 
+def collate_with_random_rot90(
+    batches: list[dict[str, torch.Tensor]]
+) -> dict[str, torch.Tensor]:
+    k_options = [-3, -2, -1, 0, 1, 2, 3]
+    k1, k2 = np.random.choice(k_options, size=2)
+
+    def rotate_batch(tensor: torch.Tensor) -> torch.Tensor:
+        s = tensor.ndim - 3  # to handle 4D data and 3D labels
+        res = torch.rot90(tensor, k1, dims=(s, s + 1))
+        res = torch.rot90(res, k2, dims=(s + 1, s + 2))
+        return res
+
+    rot_batches = []
+
+    for batch in batches:
+        rot_batch = {
+            "data": rotate_batch(batch["data"]),
+            "label": rotate_batch(batch["label"]),
+        }
+        rot_batches.append(rot_batch)
+
+    return default_collate(rot_batches)
+
+
 class LabeledDataModule(LightningDataModule):
     def __init__(
         self,
@@ -210,6 +234,7 @@ class LabeledDataModule(LightningDataModule):
             batch_size=self.cfg.train_batch_size,
             shuffle=True,
             num_workers=self.cfg.num_workers,
+            collate_fn=collate_with_random_rot90,
         )
 
     def val_dataloader(self) -> DataLoader:
