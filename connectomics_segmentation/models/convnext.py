@@ -14,6 +14,7 @@ class ConvNext(nn.Module):
         drop_path_rate: float = 0.0,
         activation: str = "GELU",
         layer_scale_init_value: float = 1e-6,
+        down_dilation: int = 1,
     ):
         super().__init__()
 
@@ -22,8 +23,25 @@ class ConvNext(nn.Module):
             for x in torch.linspace(0, drop_path_rate, sum(depths)).split(depths)
         ]
 
+        if down_dilation > 1:
+            patch_stride = 1
+            down_stride = 1
+            patch_dilation = patch_size
+            down_dilation = down_dilation
+        else:
+            patch_stride = patch_size
+            down_stride = 2
+            patch_dilation = 1
+            down_dilation = 1
+
         patch_layer = nn.Sequential(
-            nn.Conv3d(in_channels, dims[0], kernel_size=patch_size, stride=patch_size),
+            nn.Conv3d(
+                in_channels,
+                dims[0],
+                kernel_size=patch_size,
+                stride=patch_stride,
+                dilation=patch_dilation,
+            ),
             LayerNorm(dims[0], eps=1e-6, data_format="channels_first"),
         )
 
@@ -39,7 +57,8 @@ class ConvNext(nn.Module):
                     layer_scale_init_value=layer_scale_init_value,
                     drop_path_rates=dp_rates[i],
                     down_kernel_size=1 if i == 0 else 2,
-                    down_stride=1 if i == 0 else 2,
+                    down_stride=1 if i == 0 else down_stride,
+                    down_dilation=1 if i == 0 else down_dilation,
                 )
             )
             prev_dim = dim

@@ -69,16 +69,17 @@ class ConvNextStage(nn.Module):
         self,
         in_channels: int,
         out_channels: int,
+        depth: int = 2,
         down_kernel_size: int = 2,
         down_stride: int = 2,
-        depth: int = 2,
+        down_dilation: int = 1,
         activation: str = "GELU",
         layer_scale_init_value: float = 1e-6,
         drop_path_rates: list[float] | None = None,
     ):
         super().__init__()
 
-        if in_channels != out_channels or down_stride > 1:
+        if in_channels != out_channels or down_stride > 1 or down_dilation > 1:
             self.downsampling_layer = nn.Sequential(
                 LayerNorm(in_channels, eps=1e-6, data_format="channels_first"),
                 nn.Conv3d(
@@ -86,6 +87,7 @@ class ConvNextStage(nn.Module):
                     out_channels,
                     kernel_size=down_kernel_size,
                     stride=down_stride,
+                    dilation=down_dilation,
                 ),
             )
         else:

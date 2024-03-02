@@ -1,0 +1,12 @@
+net:
+  _target_: connectomics_segmentation.models.ConvNext
+  _convert_: all
+  in_channels: 1
+  patch_size: 4
+  depths: [3, 3, 3, 3, 3, 3, 3]
+  dims: [96, 192, 384, 768, 768, 768, 1024]
+  drop_path_rate: 0.0
+  down_dilation: 3
+
+out_feat: 1024
+out_spatial_shape: 2
