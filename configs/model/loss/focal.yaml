@@ -1,0 +1,3 @@
+_target_: connectomics_segmentation.losses.FocalLoss
+gamma: 2.0
+ignore_index: 6
