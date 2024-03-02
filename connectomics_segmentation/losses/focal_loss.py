@@ -1,4 +1,3 @@
-from multiprocessing import reduction
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -19,7 +18,6 @@ class FocalLoss(nn.Module):
         self.gamma = gamma
         self.ignore_idx = ignore_index
         self.label_smoothing = label_smoothing
-        self.reduction = reduction
 
     def __call__(self, pred, target):
         mask = target != self.ignore_idx
