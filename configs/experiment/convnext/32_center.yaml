@@ -1,0 +1,21 @@
+# @package _global_
+
+defaults:
+  - override /model/backbone: convnext
+  - override /model/supervised: null
+  - override /model/unsupervised: linear_head
+  - override /model/loss: mse
+  - override /data: raw_data
+  - override /callbacks: unsupervised
+  - override /trainer: unsupervised_fp32
+
+data:
+  size_power: 5
+  devel_batch_size: 4096
+  train_batch_size: 2048
+  train_subvolume_size: 1
+  devel_subvolume_size: 1
+
+model:
+  backbone:
+    out_spatial_shape: 1
