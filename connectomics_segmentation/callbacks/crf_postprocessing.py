@@ -1,5 +1,3 @@
-from typing import Any
-
 import numpy as np
 import torch
 import wandb
@@ -170,12 +168,12 @@ class DenseCRFPostprocessingCallback(Callback):
         self,
         trainer: pl.Trainer,
         pl_module: pl.LightningModule,
-        outputs: dict[str, Any],
+        outputs: dict[str, torch.Tensor],
         batch: dict[str, torch.Tensor],
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
-        proba = outputs["predictions"].numpy()
+        proba = outputs["predictions"].float().numpy()
         true_labels = batch["label"].detach().cpu().unsqueeze(1).numpy()
 
         H = batch["data"].shape[3]
@@ -186,6 +184,7 @@ class DenseCRFPostprocessingCallback(Callback):
             .detach()
             .unsqueeze(2)
             .cpu()
+            .float()
             .numpy()
         )
 
