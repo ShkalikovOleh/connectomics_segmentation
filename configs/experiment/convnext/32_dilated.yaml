@@ -4,15 +4,16 @@ defaults:
   - override /model/backbone: convnext_dilated_down
   - override /model/unsupervised: null
   - override /model/supervised: linear_head
-  - override /trainer: supervised_fp32
+  - override /trainer: supervised_default
 
 data:
   size_power: 5
-  devel_batch_size: 512
-  train_batch_size: 256
+  devel_batch_size: 128
+  train_batch_size: 64
   train_subvolume_size: 20
   devel_subvolume_size: 25
 
 model:
+  compile_model: False
   backbone:
     out_spatial_shape: 2

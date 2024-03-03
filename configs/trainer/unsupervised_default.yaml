@@ -5,5 +5,5 @@ default_root_dir: ${paths.output_dir}
 max_epochs: 30
 max_time: "00:11:45:00"
 
-limit_train_batches: 32768
-limit_val_batches: 512
+limit_train_batches: 16192
+limit_val_batches: 256

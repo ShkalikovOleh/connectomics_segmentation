@@ -7,7 +7,7 @@ defaults:
   - override /model/loss: mse
   - override /data: raw_data
   - override /callbacks: unsupervised
-  - override /trainer: unsupervised_fp32
+  - override /trainer: unsupervised_default
 
 data:
   size_power: 6

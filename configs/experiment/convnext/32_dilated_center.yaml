@@ -7,15 +7,16 @@ defaults:
   - override /model/loss: mse
   - override /data: raw_data
   - override /callbacks: unsupervised
-  - override /trainer: unsupervised_fp32
+  - override /trainer: unsupervised_default
 
 data:
   size_power: 5
-  devel_batch_size: 512
-  train_batch_size: 256
+  devel_batch_size: 128
+  train_batch_size: 64
   subvolume_size: 3
 
 model:
+  compile_model: False
   backbone:
     out_spatial_shape: 2
 

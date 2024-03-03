@@ -3,7 +3,7 @@ defaults:
   - data: labeled_data
   - model: default
   - loggers: default
-  - trainer: supervised_fp32
+  - trainer: supervised_default
   - paths: default
   - hydra: default
   - callbacks: supervised

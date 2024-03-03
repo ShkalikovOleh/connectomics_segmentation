@@ -4,7 +4,7 @@ defaults:
   - override /model/backbone: convnext
   - override /model/unsupervised: null
   - override /model/supervised: linear_head
-  - override /trainer: supervised_fp32
+  - override /trainer: supervised_default
 
 data:
   size_power: 5
