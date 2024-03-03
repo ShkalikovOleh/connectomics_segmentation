@@ -1,4 +1,4 @@
 defaults:
   - unsupervised_default
 
-precision: "bf16-mixed"
+precision: "16-mixed"
