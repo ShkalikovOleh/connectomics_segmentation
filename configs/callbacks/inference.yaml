@@ -1,0 +1,3 @@
+defaults:
+  - save_to_tiff
+  - _self_

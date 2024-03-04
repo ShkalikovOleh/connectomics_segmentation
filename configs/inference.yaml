@@ -5,9 +5,9 @@ defaults:
   - data: raw_data
   - model: default
   - trainer: supervised_default
-  - callbacks: null
   - loggers: null
   - experiment: null
+  - callbacks: inference
 
 task_name: inference
 
@@ -19,7 +19,6 @@ class_names:
   - synapse
   - vesicle
 
-pretrained_ckpt_path: null
 ckpt_path: ???
 
 seed: null

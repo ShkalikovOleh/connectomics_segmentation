@@ -1,0 +1,5 @@
+save_to_tiff:
+  _target_: connectomics_segmentation.callbacks.SaveToTiffCallback
+  H: 1065
+  W: 1536
+  D: 2048
