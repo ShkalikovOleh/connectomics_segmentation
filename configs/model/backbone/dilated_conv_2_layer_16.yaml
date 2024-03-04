@@ -1,0 +1,36 @@
+net:
+  _target_: torch.nn.Sequential
+  _args_:
+    - _target_: connectomics_segmentation.models.modules.Conv3DBlock
+      in_features: 1
+      out_features: 16
+      kernel_size: 3
+    - _target_: connectomics_segmentation.models.modules.ResidualModule
+      op: concat
+      main_module:
+        _target_: torch.nn.Sequential
+        _args_:
+        - _target_: connectomics_segmentation.models.modules.Conv3DBlock
+          in_features: 16
+          out_features: 32
+          kernel_size: 3
+          dilation: 3
+        - _target_: connectomics_segmentation.models.modules.Conv3DBlock
+          in_features: 32
+          out_features: 32
+          kernel_size: 3
+          dilation: 3
+      res_module:
+        _target_: connectomics_segmentation.models.modules.Conv3DBlock
+        in_features: 16
+        out_features: 32
+        kernel_size: 5
+        dilation: 3
+        activation: ""
+        norm: ""
+    - _target_: torch.nn.AvgPool3d
+      kernel_size: 2
+      stride: 2
+
+out_feat: 64
+out_spatial_shape: 1

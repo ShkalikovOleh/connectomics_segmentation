@@ -1,0 +1,24 @@
+# @package _global_
+
+defaults:
+  - override /model/backbone: 3_layer_8
+  - override /model/supervised: null
+  - override /model/unsupervised: linear_head
+  - override /model/loss: mse
+  - override /data: raw_data
+  - override /callbacks: unsupervised
+  - override /trainer: unsupervised_default
+
+data:
+  size_power: 3
+  devel_batch_size: 16384
+  train_batch_size: 8192
+  train_subvolume_size: 1
+  devel_subvolume_size: 1
+
+model:
+  backbone:
+    out_spatial_shape: 1
+
+supervised: False
+run_test: False
