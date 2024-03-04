@@ -51,3 +51,27 @@ def load_pretrained_backbone(
         return nn.Sequential(backbone_model, nn.Flatten(), vae_mean_module)
     else:
         return backbone_model
+
+
+def load_head(head_model: nn.Module, ckpt_path: str) -> nn.Module:
+    ckpt = torch.load(ckpt_path)
+
+    has_orig_prefix = any(map(lambda k: "_orig_mod" in k, ckpt["state_dict"].keys()))
+
+    head_prefix = "head_model."
+    if has_orig_prefix:
+        head_prefix += "_orig_mod."
+    back_key_shift = len(head_prefix)
+
+    head_model_state_dict = {}
+
+    for key in ckpt["state_dict"]:
+        if key.startswith(head_prefix):
+            value = ckpt["state_dict"][key]
+            new_key = key[back_key_shift:]
+            head_model_state_dict[new_key] = value
+
+    head_model_state_dict = OrderedDict(head_model_state_dict)
+    head_model.load_state_dict(head_model_state_dict)
+
+    return head_model

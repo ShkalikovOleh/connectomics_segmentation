@@ -1,0 +1,25 @@
+defaults:
+  - _self_
+  - hydra: default
+  - paths: default
+  - data: raw_data
+  - model: default
+  - trainer: supervised_default
+  - callbacks: null
+  - loggers: null
+  - experiment: null
+
+task_name: inference
+
+class_names:
+  - intra_cellular_space
+  - cellular_membrane
+  - intra_mitochondrial_space
+  - mitochondrial_membrane
+  - synapse
+  - vesicle
+
+pretrained_ckpt_path: null
+ckpt_path: ???
+
+seed: null

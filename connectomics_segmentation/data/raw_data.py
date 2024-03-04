@@ -84,23 +84,23 @@ class RawDataModule(LightningDataModule):
         if hasattr(self, "train_ds"):
             return
 
-        dataset = RawDataset(
+        self.dataset = RawDataset(
             self.cfg.raw_data_path,
             self.cfg.size_power,
             self.cfg.subvolume_size,
             self.cfg.padding_mode,
         )
-        self.paddings = dataset.paddings
+        self.paddings = self.dataset.paddings
 
         sizes = [
-            int(math.floor(len(dataset) * frac))
+            int(math.floor(len(self.dataset) * frac))
             for frac in self.cfg.train_val_test_procents
         ]
-        sizes[0] = len(dataset) - sum(sizes[1:])
+        sizes[0] = len(self.dataset) - sum(sizes[1:])
 
-        self.train_ds = SubDataset(dataset, 0, sizes[0])
-        self.val_ds = SubDataset(dataset, sizes[0], sizes[1])
-        self.test_ds = SubDataset(dataset, sizes[0] + sizes[1], sizes[2])
+        self.train_ds = SubDataset(self.dataset, 0, sizes[0])
+        self.val_ds = SubDataset(self.dataset, sizes[0], sizes[1])
+        self.test_ds = SubDataset(self.dataset, sizes[0] + sizes[1], sizes[2])
 
     def train_dataloader(self) -> DataLoader:
         sampler = BufferizedRandomSampler(self.train_ds, self.cfg.sampler_buffer_size)
@@ -121,6 +121,13 @@ class RawDataModule(LightningDataModule):
     def test_dataloader(self) -> DataLoader:
         return DataLoader(
             self.test_ds,
+            batch_size=self.cfg.devel_batch_size,
+            num_workers=self.cfg.num_workers,
+        )
+
+    def predict_dataloader(self) -> DataLoader:
+        return DataLoader(
+            self.dataset,
             batch_size=self.cfg.devel_batch_size,
             num_workers=self.cfg.num_workers,
         )

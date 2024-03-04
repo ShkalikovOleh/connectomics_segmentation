@@ -9,7 +9,7 @@ from connectomics_segmentation.utils import pylogger
 log = pylogger.RankedLogger(__name__, rank_zero_only=True)
 
 
-def instantiate_callbacks(callbacks_cfg: DictConfig) -> list[Callback]:
+def instantiate_callbacks(callbacks_cfg: DictConfig | None) -> list[Callback] | None:
     """Instantiates callbacks from config.
 
     Args:
@@ -18,6 +18,9 @@ def instantiate_callbacks(callbacks_cfg: DictConfig) -> list[Callback]:
     Returns:
         list[Callback]: A list of instantiated callbacks.
     """
+    if not callbacks_cfg:
+        return None
+
     callbacks: list[Callback] = []
 
     for _, cb_conf in callbacks_cfg.items():
@@ -28,7 +31,7 @@ def instantiate_callbacks(callbacks_cfg: DictConfig) -> list[Callback]:
     return callbacks
 
 
-def instantiate_loggers(loggers_cfg: DictConfig) -> list[Logger]:
+def instantiate_loggers(loggers_cfg: DictConfig | None) -> list[Logger] | None:
     """Instantiates loggers from config.
 
     Args:
@@ -36,6 +39,8 @@ def instantiate_loggers(loggers_cfg: DictConfig) -> list[Logger]:
     Returns:
         list[Logger]: A list of instantiated PL loggers.
     """
+    if not loggers_cfg:
+        return None
 
     loggers: list[Logger] = []
 
