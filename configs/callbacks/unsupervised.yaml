@@ -5,4 +5,4 @@ defaults:
 
 model_checkpoint:
   monitor: "val/loss"
-  every_n_train_steps: 8192
+  every_n_train_steps: ${trainer.limit_train_batches}
