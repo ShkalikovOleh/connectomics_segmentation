@@ -34,11 +34,13 @@ class BufferizedRandomSampler(Sampler[int]):
         self.iter_num = 0
 
     def __iter__(self) -> Iterator[int]:
+        buffer_size = min(len(self.data_source), self.buffer_size)
+
         for _ in range(len(self.data_source)):
-            start_idx = (self.iter_num // self.buffer_size) * self.buffer_size
-            shift_idx = self.iter_num % self.buffer_size
+            start_idx = (self.iter_num // buffer_size) * buffer_size
+            shift_idx = self.iter_num % buffer_size
             if shift_idx == 0:
-                self.shifts = torch.randperm(self.buffer_size).tolist()
+                self.shifts = torch.randperm(buffer_size).tolist()
 
             yield start_idx + self.shifts[shift_idx]
 
