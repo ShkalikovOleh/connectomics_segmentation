@@ -13,8 +13,7 @@ data:
   size_power: 4
   devel_batch_size: 8192
   train_batch_size: 4096
-  train_subvolume_size: 1
-  devel_subvolume_size: 1
+  subvolume_size: 1
 
 model:
   backbone:
