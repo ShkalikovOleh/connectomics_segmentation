@@ -5,4 +5,4 @@ defaults:
 
 model_checkpoint:
   monitor: "val/loss"
-  train_time_interval: "00:03:00:00"
+  every_n_train_steps: 8192
