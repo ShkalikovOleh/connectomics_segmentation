@@ -139,13 +139,17 @@ def main(cfg: DictConfig) -> None:
     log.info("Logging hyperparameters")
     log_hyperparameters(hparams)
 
-    log.info("Start training")
-    trainer.fit(module, datamodule=dm)
+    if cfg.run_train:
+        log.info("Start training")
+        trainer.fit(module, datamodule=dm)
 
     if cfg.run_test:
         log.info("Start testing")
         if trainer.global_rank == 0:
-            ckpt_path = trainer.checkpoint_callback.best_model_path
+            ckpt_path = None
+            if cfg.run_train:
+                ckpt_path = trainer.checkpoint_callback.best_model_path
+
             trainer = instantiate(
                 cfg.trainer, logger=loggers, callbacks=callbacks, devices=1
             )

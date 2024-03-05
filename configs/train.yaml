@@ -12,6 +12,7 @@ defaults:
 task_name: train
 
 supervised: True
+run_train: True
 run_test: True
 
 pretrained_ckpt_path: null
