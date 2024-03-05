@@ -31,7 +31,7 @@ class DenseCRFPostprocessingCallback(Callback):
         position_theta: list[float],
         bilateral_theta: float,
         compat_position: float,
-        compat_bilateral: float,
+        compat_bilateral: float | list[float],
         num_steps: int,
         subvolume_size: int,
         calculate_metrics: bool = True,
@@ -46,9 +46,15 @@ class DenseCRFPostprocessingCallback(Callback):
         self._position_theta = position_theta
         self._bilateral_theta = bilateral_theta
         self._compat_position = compat_position
-        self._compat_bilateral = compat_bilateral
         self._num_steps = num_steps
         self._subvolume_size = subvolume_size
+
+        if isinstance(compat_bilateral, list):
+            self._compat_bilateral = np.array(compat_bilateral).reshape(
+                n_classes, n_classes
+            )
+        else:
+            self._compat_bilateral = compat_bilateral
 
         self._proba_aggr = Aggregator(
             (n_classes, 1, image_height, image_width), np.float32

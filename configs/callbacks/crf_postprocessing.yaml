@@ -12,6 +12,7 @@ crf_postprocessing:
     - 1
   bilateral_theta: 1
   compat_position: 1
-  compat_bilateral: 1
+  # compat_bilateral: 5
+  compat_bilateral: [0,   1.0, 100, 1.0, 1.0, 100, 1.0, 0,   100, 10,  0.5, 100, 100, 100, 0,   5.0, 100, 100, 1.0, 10,  5.0, 0,   100, 100, 1.0, 0.5, 100, 100, 0,   100, 100, 100, 100, 100, 100, 0]
   num_steps: 10
   subvolume_size: ${data.devel_subvolume_size}

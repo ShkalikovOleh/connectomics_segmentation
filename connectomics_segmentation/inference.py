@@ -8,8 +8,8 @@ from omegaconf import DictConfig, OmegaConf
 from connectomics_segmentation.data.raw_data import RawDataModule
 from connectomics_segmentation.supervised_meta_model import SupervisedMetaModel
 from connectomics_segmentation.utils.checkpoints import (
-    load_pretrained_backbone,
     load_head,
+    load_pretrained_backbone,
 )
 from connectomics_segmentation.utils.instantiators import (
     instantiate_callbacks,
