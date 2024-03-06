@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - loss: focal
+  - loss: ce
   - backbone: dilated_conv_2_layer
   - supervised: linear_head
   - unsupervised: null

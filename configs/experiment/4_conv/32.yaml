@@ -1,0 +1,18 @@
+# @package _global_
+
+defaults:
+  - override /model/backbone: 4_conv_maxpool
+  - override /model/unsupervised: null
+  - override /model/supervised: linear_head
+  - override /trainer: supervised_default
+
+data:
+  size_power: 5
+  devel_batch_size: 4096
+  train_batch_size: 2048
+  train_subvolume_size: 1
+  devel_subvolume_size: 1
+
+model:
+  backbone:
+    out_spatial_shape: 1
