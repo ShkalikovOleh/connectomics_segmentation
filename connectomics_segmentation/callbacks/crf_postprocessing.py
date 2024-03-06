@@ -50,9 +50,9 @@ class DenseCRFPostprocessingCallback(Callback):
         self._subvolume_size = subvolume_size
 
         if isinstance(compat_bilateral, list):
-            self._compat_bilateral = np.array(compat_bilateral).reshape(
-                n_classes, n_classes
-            )
+            self._compat_bilateral = np.array(
+                compat_bilateral, dtype=np.float32
+            ).reshape(n_classes, n_classes)
         else:
             self._compat_bilateral = compat_bilateral
 
