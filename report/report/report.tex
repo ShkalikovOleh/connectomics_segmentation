@@ -1,0 +1,76 @@
+\documentclass[twocolumn, a4paper]{article}
+
+\usepackage{amsthm, amsmath, amssymb}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs} % for professional tables
+\usepackage{hyperref}
+\urlstyle{same}
+\hypersetup{colorlinks=true, linkcolor=black, citecolor=black, urlcolor=black}
+
+\usepackage[top=2cm, bottom=2cm, left=1.5cm, right=1.5cm]{geometry}
+\usepackage{titlesec}
+    \titleformat{\title}{\large\bfseries}{}{}{}
+    \titleformat{\section}{\normalfont\bfseries}{\thesection}{0.5em}{}
+    \titleformat{\subsection}{\normalfont\it}{\thesubsection}{0.5em}{}
+    \titleformat{\subsubsection}{\normalfont\normalsize\it}{\thesubsubsection}{0.5em}{}
+    \titleformat{\paragraph}[runin]{\normalfont\bfseries}{\theparagraph}{0.5em}{}
+    \titleformat{\subparagraph}[runin]{\normalfont\normalsize\it}{\thesubparagraph}{0.5em}{}
+\usepackage[font=small,labelfont=bf,labelsep=space]{caption}
+
+% \usepackage[round]{natbib}
+% 	\renewcommand{\cite}[1]{\citep{#1}}
+
+% \usepackage[ruled]{algorithm2e}
+% \SetKwComment{Comment}{// }{ }
+
+% \usepackage{tikz}
+% \usetikzlibrary{shapes.geometric, arrows}
+% \usetikzlibrary{calc}
+
+% \tikzstyle{main_node} = [circle, minimum width=1cm,text centered, draw=black, fill=red!30]
+% \tikzstyle{neigh_node} = [circle, minimum width=1cm,text centered, draw=black, fill=green!30]
+% \tikzstyle{node} = [circle, minimum width=1cm,text centered, draw=black, fill=cyan!30]
+% \tikzstyle{arrow} = [thick,->,>=stealth]
+
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+
+\begin{document}
+
+\title{\bf\Large Segmentation of 3D volume images for connectomics}
+\author{Oleh Shkalikov\texorpdfstring{(5102818)
+\\[0.7em]{\small Supervisors: Jannik Irmai, David Stein}
+\\{\small Chairholder: Prof. Dr. Bjoern Andres}}{}}
+\date{CMS Research project, TU Dresden}
+
+\twocolumn[
+    \begin{@twocolumnfalse}
+        \maketitle
+
+        \vspace{7ex}
+    \end{@twocolumnfalse}
+]
+
+\section{Introduction}
+% \cite{liu2022convnet}
+\cite{lucchi2011supervoxel,lucchi2013learning}
+
+\section{Related work}
+
+\section{Methodology}
+
+\section{Experiments}
+
+\section{Directions of further research}
+
+\section{Conclusions}
+
+\bibliography{../references.bib}
+\bibliographystyle{ieeetr}
+
+\end{document}
