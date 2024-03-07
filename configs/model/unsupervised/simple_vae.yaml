@@ -22,3 +22,4 @@ vae:
     enc_out_feat_dim: ${prod_list:[${ipow:${model.backbone.out_spatial_shape},3}, ${model.backbone.out_feat}]}
 
   kl_loss_weight: 0.5
+  mask_padding_size: 0

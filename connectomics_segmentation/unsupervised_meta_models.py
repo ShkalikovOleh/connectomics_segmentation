@@ -22,6 +22,7 @@ class VAEMetaModel(LightningModule):
         kl_loss_weight: float,
         lr_scheduler_factory: lr_sched_factory | None = None,
         compile_model: bool = True,
+        mask_padding_size: int = 0,
     ) -> None:
         super().__init__()
 
@@ -29,6 +30,7 @@ class VAEMetaModel(LightningModule):
         self.optimizer_factory = optimizer_factory
         self.lr_scheduler_factory = lr_scheduler_factory
         self.compile_model = compile_model
+        self.mask_padding_size = mask_padding_size
 
         self.recon_loss = recon_loss
         self.kl_loss_weight = kl_loss_weight
@@ -59,8 +61,24 @@ class VAEMetaModel(LightningModule):
     def forward(self, data: torch.Tensor) -> torch.Tensor:
         return self.model(data)
 
-    def _step(self, batch: torch.Tensor, stage: str) -> torch.Tensor:        
-        mean, logvar = self.model.encode(batch)
+    @staticmethod
+    def mask_input(mask_padding_size: int, batch: torch.Tensor) -> torch.Tensor:
+        if mask_padding_size == 0:
+            return batch
+        else:
+            H = batch.shape[2]
+            masked = batch.clone()
+
+            start_idx = (H - mask_padding_size + 1) // 2
+            end_idx = start_idx + mask_padding_size
+            masked[:, :, start_idx:end_idx, start_idx:end_idx, start_idx:end_idx] = 0
+
+            return masked
+
+    def _step(self, batch: torch.Tensor, stage: str) -> torch.Tensor:
+        input = self.mask_input(self.mask_padding_size, batch)
+
+        mean, logvar = self.model.encode(input)
         latent = self.model.reparametrize(mean, logvar)
         recon = self.model.decode(latent)
 
@@ -98,6 +116,7 @@ class CenterVoxelRegressionMetaModel(LightningModule):
         subvolume_size: int = 1,
         dropout_prob: float = 0.3,
         compile_model: bool = True,
+        mask_padding_size: int = 0,
     ) -> None:
         super().__init__()
 
@@ -109,6 +128,7 @@ class CenterVoxelRegressionMetaModel(LightningModule):
         self.compile_model = compile_model
         self.dropout_prob = dropout_prob
         self.subvolume_size = subvolume_size
+        self.mask_padding_size = mask_padding_size
 
     def setup(self, stage: str) -> None:
         if self.compile_model and stage == "fit":
@@ -145,13 +165,17 @@ class CenterVoxelRegressionMetaModel(LightningModule):
         H = batch.shape[2]
         start_idx = (H - self.subvolume_size + 1) // 2
         end_idx = start_idx + self.subvolume_size
-        target_view = batch[
-            :, 0, start_idx:end_idx, start_idx:end_idx, start_idx:end_idx
-        ]
-        targets = target_view.detach().clone().unsqueeze_(1)
+        targets = (
+            batch[:, 0, start_idx:end_idx, start_idx:end_idx, start_idx:end_idx]
+            .detach()
+            .clone()
+            .unsqueeze_(1)
+        )
 
-        # mask center voxel and several others randomly
-        target_view = 0
+        # mask center voxels and several others randomly
+        start_idx = (H - self.subvolume_size - self.mask_padding_size + 1) // 2
+        end_idx = start_idx + self.subvolume_size + 2 * self.mask_padding_size
+        batch[:, :, start_idx:end_idx, start_idx:end_idx, start_idx:end_idx] = 0
         nn.functional.dropout(
             batch, p=self.dropout_prob, training=self.training, inplace=True
         )

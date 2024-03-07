@@ -109,6 +109,7 @@ def main(cfg: DictConfig) -> None:
                 kl_loss_weight=cfg.model.vae.kl_loss_weight,
                 lr_scheduler_factory=sched_factory,
                 compile_model=cfg.model.compile_model,
+                mask_padding_size=cfg.model.vae.mask_padding_size,
             )
 
             hparams["model"] = model
@@ -124,6 +125,8 @@ def main(cfg: DictConfig) -> None:
                 lr_scheduler_factory=sched_factory,
                 subvolume_size=cfg.data.subvolume_size,
                 compile_model=cfg.model.compile_model,
+                dropout_prob=cfg.model.head.dropout_prob,
+                mask_padding_size=cfg.model.head.mask_padding_size,
             )
 
             hparams["backbone_model"] = backbone_model

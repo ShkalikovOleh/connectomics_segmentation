@@ -5,3 +5,6 @@ net:
   in_channels: ${model.backbone.out_feat}
   kernel_size: ${model.backbone.out_spatial_shape}
   out_channels: 1
+
+mask_padding_size: 0
+dropout_prob: 0.3
