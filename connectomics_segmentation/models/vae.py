@@ -1,3 +1,5 @@
+from typing import Callable
+
 import torch
 from torch import nn
 
@@ -41,3 +43,25 @@ class VAE(nn.Module):
         mean, logvar = self.encode(x)
         latent = self.reparametrize(mean, logvar)
         return self.decode(latent)
+
+
+class UpsampleNet(nn.Module):
+    def __init__(
+        self,
+        block_func: Callable[[int, int], nn.Module],
+        n_features: list[int],
+        latent_dim: int = 512,
+    ) -> None:
+        super().__init__()
+
+        blocks: list[nn.Module] = [nn.Unflatten(1, (latent_dim, 1, 1, 1))]
+
+        in_feat = latent_dim
+        for n_feat in n_features:
+            blocks.append(block_func(in_feat, n_feat))
+            in_feat = n_feat
+
+        self.blocks = nn.Sequential(*blocks)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.blocks(x)

@@ -1,0 +1,24 @@
+# @package model
+
+vae:
+  net:
+    _target_: connectomics_segmentation.models.VAE
+    decoder:
+      _target_: torch.nn.Sequential
+      _args_:
+        - _target_: connectomics_segmentation.models.UpsampleNet
+          latent_dim: ${model.vae.net.latent_dim}
+          n_features: [256, 128, 64, 32, 16]
+          block_func:
+            _target_: connectomics_segmentation.models.modules.Upsample2ConvBlock
+            _partial_: true
+        - _target_: torch.nn.Conv3d
+          in_channels: 16
+          kernel_size: 3
+          padding: 1
+          out_channels: 1
+    latent_dim: 512
+    enc_out_feat_dim: ${prod_list:[${ipow:${model.backbone.out_spatial_shape},3}, ${model.backbone.out_feat}]}
+
+  kl_loss_weight: 0.5
+  mask_padding_size: 0

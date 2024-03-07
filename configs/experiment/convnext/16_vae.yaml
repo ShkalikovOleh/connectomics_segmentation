@@ -1,22 +1,24 @@
 # @package _global_
 
 defaults:
-  - override /model/backbone: dilated_conv_2_layer
+  - override /model/backbone: convnext
   - override /model/supervised: null
-  - override /model/unsupervised: vae_conv_upsample_32
+  - override /model/unsupervised: vae_conv_upsample_16
   - override /model/loss: mse
   - override /data: raw_data
   - override /callbacks: unsupervised
   - override /trainer: unsupervised_default
 
 data:
-  size_power: 5
-  devel_batch_size: 512
-  train_batch_size: 256
+  size_power: 4
+  devel_batch_size: 2048
+  train_batch_size: 1024
   subvolume_size: 1
 
 model:
   backbone:
+    net:
+      patch_size: 2
     out_spatial_shape: 1
   vae:
     net:
