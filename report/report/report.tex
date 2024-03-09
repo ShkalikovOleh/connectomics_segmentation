@@ -5,6 +5,7 @@
 \usepackage{graphicx}
 \usepackage{booktabs} % for professional tables
 \usepackage{hyperref}
+\usepackage{multirow}
 \urlstyle{same}
 \hypersetup{colorlinks=true, linkcolor=black, citecolor=black, urlcolor=blue}
 
@@ -57,7 +58,7 @@
 The aim of this research project is to develop approaches
 for segmentation of 3D volume images for connectomics given
 a labeled dataset. The importance of this problem comes from the
-developing methods (e.g. \cite{10.7554/eLife.25916}) of acquiring high resolution volume images
+developing of methods (e.g. \cite{10.7554/eLife.25916}) of acquiring high resolution volume images
 which makes hard to analyze all gathered data by hand because of their size.
 Therefore automatic methods such as automatic labeling of data is needed.
 
@@ -66,9 +67,53 @@ on the given dataset.
 
 \section{Dataset description and analysis}
 
+The labeled dataset which we use for out project is based on
+the image volumes of the CA1 hippocampus region of the brain
+acquired by a focused ion beam scanning electron microscope (FIB-SEM).
 The raw data is available under
 \url{https://www.epfl.ch/labs/cvlab/data/data-em/} and initially was used in
-\cite{lucchi2011supervoxel,lucchi2013learning}.
+\cite{lucchi2011supervoxel,lucchi2013learning}. This dataset also contains binary
+labels for mitochondria which we don't use because we have been provided with wider
+set of labels.
+
+The actual labeling has been performed by An Dang Thanh (student of the MLCV lab)
+only on slices of subvolumes where to
+each pixel of slice \textbf{one} of the following labels has been assigned:
+\begin{itemize}
+    \item cell membrane
+    \item cell cytoplasm
+    \item mitochondrion
+    \item mitochondrion membrane
+    \item synapse
+    \item vesicle
+    \item undefined (in the case where annotator was uncertain about the correct label)
+\end{itemize}
+In total 9 slices of the raw data volume has been labeled and split into train,
+validation and test splits: 3 slices for each split, but every train slice has a shape
+\( 600 \times 600 \) whereas every validation and test slice has a shape \( 425 \times 425 \).
+The locations of slices in the raw volume are denoted in the table~\ref{tab:data_loc}.
+\begin{table}[h]
+    \centering
+    \begin{tabular}{c|c|c|c}
+        Split                             & X range           & Y range            & Z range           \\
+        \hline
+
+        \multirow[vpos]{3}{*}{Train}      & \( [510, 1109] \) & \( [200, 799] \)   & 200               \\
+                                          & \( [510, 1109] \) & 510                & \( [150, 749 ] \) \\
+                                          & \( 595  \)        & \( [200, 799] \)   & \( [150, 749 ] \) \\
+        \hline
+        \multirow[vpos]{3}{*}{Validation} & \( [675, 1099] \) & \( [1000, 1424] \) & 320               \\
+                                          & \( [675, 1099] \) & 1140               & \( [200, 624] \)  \\
+                                          & \( 985  \)        & \( [1000, 1424] \) & \( [200, 624] \)  \\
+        \hline
+        \multirow[vpos]{3}{*}{Test}       & \( [510, 1109] \) & \( [200, 799] \)   & 200               \\
+                                          & \( [510, 1109] \) & 510                & \( [150, 749 ] \) \\
+                                          & \( 595  \)        & \( [200, 799] \)   & \( [150, 749 ] \) \\
+        \hline
+    \end{tabular}
+    \caption{Location of the labeled slices in the raw volume}
+    \label{tab:data_loc}
+\end{table}
 
 \section{Related work}
 
