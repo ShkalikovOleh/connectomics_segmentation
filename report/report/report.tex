@@ -6,7 +6,7 @@
 \usepackage{booktabs} % for professional tables
 \usepackage{hyperref}
 \urlstyle{same}
-\hypersetup{colorlinks=true, linkcolor=black, citecolor=black, urlcolor=black}
+\hypersetup{colorlinks=true, linkcolor=black, citecolor=black, urlcolor=blue}
 
 \usepackage[top=2cm, bottom=2cm, left=1.5cm, right=1.5cm]{geometry}
 \usepackage{titlesec}
@@ -17,9 +17,6 @@
     \titleformat{\paragraph}[runin]{\normalfont\bfseries}{\theparagraph}{0.5em}{}
     \titleformat{\subparagraph}[runin]{\normalfont\normalsize\it}{\thesubparagraph}{0.5em}{}
 \usepackage[font=small,labelfont=bf,labelsep=space]{caption}
-
-% \usepackage[round]{natbib}
-% 	\renewcommand{\cite}[1]{\citep{#1}}
 
 % \usepackage[ruled]{algorithm2e}
 % \SetKwComment{Comment}{// }{ }
@@ -57,20 +54,49 @@
 ]
 
 \section{Introduction}
-% \cite{liu2022convnet}
-\cite{lucchi2011supervoxel,lucchi2013learning}
+The aim of this research project is to develop approaches
+for segmentation of 3D volume images for connectomics given
+a labeled dataset. The importance of this problem comes from the
+developing methods (e.g. \cite{10.7554/eLife.25916}) of acquiring high resolution volume images
+which makes hard to analyze all gathered data by hand because of their size.
+Therefore automatic methods such as automatic labeling of data is needed.
+
+In this work we will propose CNN based methods for solving this task and evaluate them
+on the given dataset.
+
+\section{Dataset description and analysis}
+
+The raw data is available under
+\url{https://www.epfl.ch/labs/cvlab/data/data-em/} and initially was used in
+\cite{lucchi2011supervoxel,lucchi2013learning}.
 
 \section{Related work}
 
 \section{Methodology}
 
+\subsection{Probation of classical approaches}
+
+\subsection{Convolutional neural networks}
+
+\subsection{Pretraining}
+
+\subsection{Postprocessing}
+
 \section{Experiments}
 
+\subsection{Efficiency of pretraining}
+
+\subsection{Segmentation models evaluation}
+
 \section{Directions of further research}
+\subsection{Context-free formal grammars}
 
 \section{Conclusions}
 
 \bibliography{../references.bib}
 \bibliographystyle{ieeetr}
+
+\onecolumn
+\section*{Appendix}
 
 \end{document}
