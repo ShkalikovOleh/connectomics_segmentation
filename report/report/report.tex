@@ -9,6 +9,8 @@
 \urlstyle{same}
 \hypersetup{colorlinks=true, linkcolor=black, citecolor=black, urlcolor=blue}
 
+\usepackage{subcaption}
+
 \usepackage[top=2cm, bottom=2cm, left=1.5cm, right=1.5cm]{geometry}
 \usepackage{titlesec}
     \titleformat{\title}{\large\bfseries}{}{}{}
@@ -22,7 +24,10 @@
 % \usepackage[ruled]{algorithm2e}
 % \SetKwComment{Comment}{// }{ }
 
-% \usepackage{tikz}
+\usepackage{graphicx}
+\graphicspath{{../assets}}
+
+\usepackage{tikz}
 % \usetikzlibrary{shapes.geometric, arrows}
 % \usetikzlibrary{calc}
 
@@ -30,6 +35,23 @@
 % \tikzstyle{neigh_node} = [circle, minimum width=1cm,text centered, draw=black, fill=green!30]
 % \tikzstyle{node} = [circle, minimum width=1cm,text centered, draw=black, fill=cyan!30]
 % \tikzstyle{arrow} = [thick,->,>=stealth]
+
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+\pgfplotsset{
+    report_style/.style={
+    legend style={draw=none, font=\small},
+    legend cell align=left,
+    legend pos=north east,
+    ylabel style={align=center, font=\bfseries\boldmath},
+    xlabel style={align=center, font=\bfseries\boldmath},
+    x tick label style={font=\bfseries\boldmath},
+    y tick label style={font=\bfseries\boldmath},
+    scaled ticks=false,
+    every axis plot/.append style={thick},
+    },
+}
 
 
 \newtheorem{theorem}{Theorem}
@@ -70,52 +92,172 @@ on the given dataset.
 The labeled dataset which we use for out project is based on
 the image volumes of the CA1 hippocampus region of the brain
 acquired by a focused ion beam scanning electron microscope (FIB-SEM).
-The raw data is available under
-\url{https://www.epfl.ch/labs/cvlab/data/data-em/} and initially was used in
-\cite{lucchi2011supervoxel,lucchi2013learning}. This dataset also contains binary
+The raw data has a shape \( 2048 \times 1536 \times 1065 \)  and is available under
+\url{https://www.epfl.ch/labs/cvlab/data/data-em/}. It was initially used in
+\cite{lucchi2011supervoxel,lucchi2013learning} because this dataset also contains binary
 labels for mitochondria which we don't use because we have been provided with wider
-set of labels.
+set of labels. The given connectomics volume image of the brain is
+isotropic which allow us to rotate the volume/subvolumes without any side effects.
 
 The actual labeling has been performed by An Dang Thanh (student of the MLCV lab)
 only on slices of subvolumes where to
 each pixel of slice \textbf{one} of the following labels has been assigned:
-\begin{itemize}
-    \item cell membrane
+\begin{enumerate}
+    \itemsep0em
     \item cell cytoplasm
+    \item cell membrane
     \item mitochondrion
     \item mitochondrion membrane
     \item synapse
     \item vesicle
     \item undefined (in the case where annotator was uncertain about the correct label)
-\end{itemize}
+\end{enumerate}
 In total 9 slices of the raw data volume has been labeled and split into train,
 validation and test splits: 3 slices for each split, but every train slice has a shape
 \( 600 \times 600 \) whereas every validation and test slice has a shape \( 425 \times 425 \).
 The locations of slices in the raw volume are denoted in the table~\ref{tab:data_loc}.
-\begin{table}[h]
+\begin{table}[t]
     \centering
     \begin{tabular}{c|c|c|c}
-        Split                             & X range           & Y range            & Z range           \\
+        Split                             & X range            & Y range            & Z range           \\
         \hline
 
-        \multirow[vpos]{3}{*}{Train}      & \( [510, 1109] \) & \( [200, 799] \)   & 200               \\
-                                          & \( [510, 1109] \) & 510                & \( [150, 749 ] \) \\
-                                          & \( 595  \)        & \( [200, 799] \)   & \( [150, 749 ] \) \\
+        \multirow[vpos]{3}{*}{Train}      & \( [510, 1109] \)  & \( [200, 799] \)   & 200               \\
+                                          & \( [510, 1109] \)  & 510                & \( [150, 749 ] \) \\
+                                          & \( 595  \)         & \( [200, 799] \)   & \( [150, 749 ] \) \\
         \hline
-        \multirow[vpos]{3}{*}{Validation} & \( [675, 1099] \) & \( [1000, 1424] \) & 320               \\
-                                          & \( [675, 1099] \) & 1140               & \( [200, 624] \)  \\
-                                          & \( 985  \)        & \( [1000, 1424] \) & \( [200, 624] \)  \\
+        \multirow[vpos]{3}{*}{Validation} & \( [675, 1099] \)  & \( [1000, 1424] \) & 320               \\
+                                          & \( [675, 1099] \)  & 1140               & \( [200, 624] \)  \\
+                                          & \( 985  \)         & \( [1000, 1424] \) & \( [200, 624] \)  \\
         \hline
-        \multirow[vpos]{3}{*}{Test}       & \( [510, 1109] \) & \( [200, 799] \)   & 200               \\
-                                          & \( [510, 1109] \) & 510                & \( [150, 749 ] \) \\
-                                          & \( 595  \)        & \( [200, 799] \)   & \( [150, 749 ] \) \\
+        \multirow[vpos]{3}{*}{Test}       & \( [1325, 1749] \) & \( [1000, 1424] \) & 650               \\
+                                          & \( [1325, 1749] \) & 1100               & \( [350, 774 ] \) \\
+                                          & \( 1532  \)        & \( [1000, 1424] \) & \( [350, 774 ] \) \\
         \hline
     \end{tabular}
     \caption{Location of the labeled slices in the raw volume}
     \label{tab:data_loc}
 \end{table}
 
+The dataset has been labeled by a non bio-medical expert, therefore there is a chance of mistakes
+in the labeling. Another limitation of the dataset is the fact that the same pixel can represent
+different biological structures and therefor labels whereas in our dataset we have only one label for
+every pixel. For example, vesicles and mitochondria are part of the cell cytoplasm or
+synapses are labeled as regions where a neuron passes a signal to another neuron and belong
+to cell membranes and cell cytoplasm.
+
+\begin{figure}[ht]
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+                report_style,
+                ybar,
+                xlabel={Class label},
+                ylabel={Counts},
+                small
+            ]
+            \addplot+[] table[x=label,y=counts, col sep=comma] {../data/label_dist.csv};
+        \end{axis}
+    \end{tikzpicture}
+    \caption{The distribution of labels for the train split}
+    \label{fig:dist_labels}
+\end{figure}
+
+\begin{figure*}[t]
+    \begin{subfigure}{0.49 \textwidth}
+        \centering
+        \includegraphics[width=0.85\textwidth]{raw_data_dist.pdf}
+        \caption{all labels}
+    \end{subfigure}
+    \begin{subfigure}{0.49 \textwidth}
+        \centering
+        \includegraphics[width=0.85\textwidth]{raw_data_dist_per_label.pdf}
+        \caption{grouped by label}
+    \end{subfigure}
+    \caption{The distribution of raw data for train split}
+    \label{fig:dist_raw_train}
+\end{figure*}
+
+Data have a property of a high class imbalance, in particular: 46\% of all training data belongs to
+cell cytoplasm, 19.4 \% to cell membrane and the remaining to other labels.
+Also it worth to mention that 25.8 \% of the training split is not labeled
+(i.e. label undefined has been assigned) and usually non labeled regions corresponds to
+the places where several labels are adjacent and it is not clear to which class pixel should belongs to.
+Therefore the hardest regions of the volume are not labeled and it can affect the performance of models
+trained on this data since we use an inductive learning approach.
+The distribution of the class labels for the train split is depicted on figure \ref{fig:dist_labels}.
+
+Then we analyzed the distribution of raw data values for the train split. The histograms
+are shown on figure \ref{fig:dist_raw_train}. Based on the fact that data look like it has
+a normal distribution the results of statistical test of normality \cite{normalitytest} with a
+null hypothesis that data is normally distributed have shown that data are not normally distributed
+(all p values less than \( 10^{-182} \)) with very high confidence level.
+
+Another important question which can be answered from data is whether means of raw data values
+which corresponds to different labels are different. To check it we used several statistical tests.
+First of all we compute p value for one way ANOVA \cite{lowry2014concepts} test with null hypothesis that all means are equal.
+The computer p value of this test is close to 0, so not all means are equal. Then we used t-test \cite{student1908probable}
+with a null hypothesis that two means are equal for every pair of data which corresponds to different labels.
+The results are shown in the table \ref{tab:data_ttest} and with a high confidence level
+all means are different except means for mitochondria and synapses. It means that in average the
+raw data values of each class except this two are different and therefore a model can exploit it.
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{c|c|c|c|c|c|c|c}
+        % \hline
+          & 1 & 2 & 3     & 4 & 5      & 6      & 7      \\
+        \hline
+        1 & 0 & 0 & 0     & 0 & 0      & 0      & 0      \\
+        \hline
+        2 & 0 & 0 & 0     & 0 & 0      & 0      & 0      \\
+        \hline
+        3 & 0 & 0 & 0     & 0 & 0.175  & 0      & 0      \\
+        \hline
+        4 & 0 & 0 & 0     & 0 & 0      & 0      & 0      \\
+        \hline
+        5 & 0 & 0 & 0.175 & 0 & 0      & 0      & 0.0003 \\
+        \hline
+        6 & 0 & 0 & 0     & 0 & 0      & 0      & 0.0029 \\
+        \hline
+        7 & 0 & 0 & 0     & 0 & 0.0003 & 0.0029 & 0      \\
+        % \hline
+    \end{tabular}
+    \caption{P-values of t-test for different labels combination}
+    \label{tab:data_ttest}
+\end{table}
+
 \section{Related work}
+Since the labeled dataset is unique in terms of amount of labeled data and labels
+and have not been used before there are no papers which aims to solve exactly the same problem.
+But a lot of approaches have been developed for similar connectomics volume images.
+
+The paper \cite{lucchi2013learning} from where the raw data comes from solves the problem of mitochondria segmentation (binary).
+Authors used non neural network based approach which use conditional random fields (CRF). They proposed
+the new learning algorithm which approximate subgradients used for graphical model training using working sets and archive SOTA
+results in comparison to other non neural network based methods (at least as for time of publication).
+The proposed methods works on the feature vectors extracted from SLIC supervoxels \cite{achanta2012slic}
+using Ray descriptors \cite{lucchi2011supervoxel} and intensity histograms.
+
+In the last decade with a growing of popularity of neural networks a lot of CNN based
+models appear in the field of connectomics volume images segmentation. Usually architectures of
+segmentation networks is an adapted to 3D case version of popular 2D CNN models of they aim to work
+with input subvolume or 2D CNN in a case when input is 2D image, but the later suffers from
+the fact that it doesn't use all available volume information.
+
+For example, V-Net \cite{milletari2016v}
+is an adapted version of popular U-Net \cite{ronneberger2015u}, where authors swap 2D convolution with
+3D convolution with kernel size \( 5 \times 5 \times 5 \) and change the number of layers for each stage from 2 to 3 as well as
+downsampling strategy from pooling to strided convolutions.
+
+In \cite{cheng2017volume} authors studied a problem of class imbalance and proposed their own loss function.
+The paper considers 3D and 2D CNN models and proposed factorized to handle the computational expensiveness of 3D convolutions.
+Also they pointed out the importance of augmentation such as flips and elastic deformation.
+
+\cite{lin2021pytorch} is a python library
+
+
+
 
 \section{Methodology}
 
