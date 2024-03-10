@@ -53,8 +53,6 @@
     },
 }
 
-\itemsep0em
-
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}{Lemma}
 \newtheorem{corollary}{Corollary}
@@ -88,7 +86,7 @@ Therefore automatic methods such as automatic labeling of data is needed.
 In this work we will propose CNN based methods for solving this task and evaluate them
 on the given dataset.
 
-\section{Dataset description and analysis}
+\section{Dataset description and analysis} \label{sec:data_analysis}
 
 The labeled dataset which we use for out project is based on
 the image volumes of the CA1 hippocampus region of the brain
@@ -104,6 +102,7 @@ The actual labeling has been performed by An Dang Thanh (student of the MLCV lab
 only on slices of subvolumes where to
 each pixel of slice \textbf{one} of the following labels has been assigned:
 \begin{enumerate}
+    \itemsep0em
     \item cell cytoplasm
     \item cell membrane
     \item mitochondrion
@@ -298,13 +297,14 @@ Finally the formulation of the problem is the following:
 Throughout our project we will vary model \( f \) but the formulation will remain exactly the same.
 
 \subsection{Probation of classical approaches}
-The first types of models are inspired by the result of data analysis and in particular the result
+The first type of models are inspired by the result of data analysis and in particular the result
 (table \ref{tab:data_ttest}) that difference of means of almost all classes are statistically significant.
 So it is worth to check whether the value of intensity of voxel itself is enough to predict a correct label.
 
 We d o it in the following way: take intensities of all labeled voxels and train a
-classical ML model:
+classical ML models such as:
 \begin{itemize}
+    \itemsep0em
     \item Decision tree \cite{breiman2017classification}
     \item Random forest \cite{breiman2001random}
     \item Ada boosting on trees \cite{hastie2009multi}
@@ -314,6 +314,7 @@ Since it is clear that only intensities probably will not be enough to correctly
 labels we use the same list of models but extend inputs by adding a hand crafted features by
 applying well known convolutional kernels to the train slices, in particular:
 \begin{itemize}
+    \itemsep0em
     \item Sobel's \(x \) and \(y\) derivatives
     \item Prewitt's \(x \) and \(y\) derivatives
     \item Laplace
@@ -321,11 +322,40 @@ applying well known convolutional kernels to the train slices, in particular:
 \end{itemize}
 But as it will be shown in the subsection \ref{sec:voxelwise_expr} even these features are
 not enough to perform segmentation with appropriate quality therefore we need more complex models
-and extension of an input to subvolumes.
+and extension of inputs to subvolumes.
 
 \subsection{Convolutional neural networks}
+The next type of models is 3D convolutional neural networks (CNN) which have shown their efficiency
+on the similar connectomics segmentation tasks. We have implemented a variety of architectures for our
+research. In total we end up with
 
 \subsection{Pretraining}
+Initially pretraining approaches such as masked token prediction \cite{devlin2018bert}
+or next token prediction \cite{radford2019language}
+have shown their efficiency for NLP tasks. The main idea is to use only
+unlabeled data and train model to predict some masked part of it which allows model
+to better understand the structure of data (language) and only then finetune model on labeled
+dataset to some specific task.
+In the last years it has been proved \cite{woo2023convnext} that CNN models also can benefit from
+pretraining in the similar way, i.e. by masking part of the image with the aim
+of its reconstruction via autoencoder.
+
+Inspired by this ideas we propose 2 types of pretraining techniques for out task.
+It is possible because every CNN can be split into 2 parts: backbone which extract
+features and head which depends on the task. So, during the pretraining we will train
+the backbone of the model and then during finetuning stage change the head to classification.
+Therefore all our pretraining methods differs only in heads.
+
+The first pretraining method is a center voxel regression. We mask the center voxel
+(optionally with padding, e.g. if padding 1 then we mask \( 3 \times 3 \) center region)
+and train our model to predict the intensities in the masked region. This method is based
+on the findings from section \ref{sec:data_analysis} that means of intensity for almost all classes are different therefore intensity itself
+can help to predict a correct label.
+
+The second approach is a training of the variational autoencoder (VAE) \cite{kingma2013auto} where we mask the center voxel
+(optionally with padding, i.e. some center region) and reconstruct the whole input (including the masked
+center region) using VAE framework. This approach is adapted from \cite{woo2023convnext} but we
+mask interesting for us center voxel/region and usually use different network architecture.
 
 \subsection{Postprocessing}
 
