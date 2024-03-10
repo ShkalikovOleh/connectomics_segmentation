@@ -254,9 +254,11 @@ In \cite{cheng2017volume} authors studied a problem of class imbalance and propo
 The paper considers 3D and 2D CNN models and proposed factorized to handle the computational expensiveness of 3D convolutions.
 Also they pointed out the importance of augmentation such as flips and elastic deformation.
 
-\cite{lin2021pytorch} is a python library
+\cite{lin2021pytorch} is a python library for connectomics segmentation which implements a lot of
+SOTA CNN based methods and allows users train and infer pretrained models on their data.
 
-
+The shared limitation of all CNN based methods is the constraint that the output shape of the model
+is equal to input shape, therefore to train a model to segment volumes the labeled volumes are required.
 
 
 \section{Methodology}
