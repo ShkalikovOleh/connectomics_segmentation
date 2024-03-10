@@ -53,6 +53,7 @@
     },
 }
 
+\itemsep0em
 
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}{Lemma}
@@ -103,7 +104,6 @@ The actual labeling has been performed by An Dang Thanh (student of the MLCV lab
 only on slices of subvolumes where to
 each pixel of slice \textbf{one} of the following labels has been assigned:
 \begin{enumerate}
-    \itemsep0em
     \item cell cytoplasm
     \item cell membrane
     \item mitochondrion
@@ -199,28 +199,28 @@ First of all we compute p value for one way ANOVA \cite{lowry2014concepts} test 
 The computer p value of this test is close to 0, so not all means are equal. Then we used t-test \cite{student1908probable}
 with a null hypothesis that two means are equal for every pair of data which corresponds to different labels.
 The results are shown in the table \ref{tab:data_ttest} and with a high confidence level
-all means are different except means for mitochondria and synapses. It means that in average the
+all means are different except means for cell membrane and mitochondrion membrane. It means that in average the
 raw data values of each class except this two are different and therefore a model can exploit it.
 
 \begin{table}[ht]
     \centering
     \begin{tabular}{c|c|c|c|c|c|c|c}
         % \hline
-          & 1 & 2 & 3     & 4 & 5      & 6      & 7      \\
+          & 1 & 2     & 3 & 4      & 5      & 6 & 7      \\
         \hline
-        1 & 0 & 0 & 0     & 0 & 0      & 0      & 0      \\
+        1 & 0 & 0     & 0 & 0      & 0      & 0 & 0      \\
         \hline
-        2 & 0 & 0 & 0     & 0 & 0      & 0      & 0      \\
+        2 & 0 & 0     & 0 & 0.175  & 0      & 0 & 0      \\
         \hline
-        3 & 0 & 0 & 0     & 0 & 0.175  & 0      & 0      \\
+        3 & 0 & 0     & 0 & 0      & 0      & 0 & 0      \\
         \hline
-        4 & 0 & 0 & 0     & 0 & 0      & 0      & 0      \\
+        4 & 0 & 0.175 & 0 & 0      & 0      & 0 & 0.0003 \\
         \hline
-        5 & 0 & 0 & 0.175 & 0 & 0      & 0      & 0.0003 \\
+        5 & 0 & 0     & 0 & 0      & 0      & 0 & 0.0029 \\
         \hline
-        6 & 0 & 0 & 0     & 0 & 0      & 0      & 0.0029 \\
+        6 & 0 & 0     & 0 & 0      & 0      & 0 & 0      \\
         \hline
-        7 & 0 & 0 & 0     & 0 & 0.0003 & 0.0029 & 0      \\
+        7 & 0 & 0     & 0 & 0.0003 & 0.0029 & 0 & 0      \\
         % \hline
     \end{tabular}
     \caption{P-values of t-test for different labels combination}
@@ -260,10 +260,68 @@ SOTA CNN based methods and allows users train and infer pretrained models on the
 The shared limitation of all CNN based methods is the constraint that the output shape of the model
 is equal to input shape, therefore to train a model to segment volumes the labeled volumes are required.
 
-
 \section{Methodology}
+Before discussing approaches which we use in our project le'ts formalize the problem. In this
+research we consider only supervised methods which requires labeled data.
+
+First of all, despite the need of multi label classification mentioned in the previos section
+where for every input volume a model outputs several labels we can't come up with a
+supervised solution. The reason is that even if we managed to construct and train a model for multi label
+classification we still don't have any data to properly evaluate it. Therefore we end up only with multi class classification.
+
+Secondly, the given labeled dataset contains unlabeled data (i.e. labeled with label 7) thus
+there is no sense to train a model to predict class which corresponds to label 7, therefore we filter
+out all examples which have this label.
+
+Third, to use all spatial information from data the input to models will be a 3D subvolume,
+but since we have only 3 labeled flat slices in the train split we cannot have a model for which
+output shape equals to an input shape. The universal solution to this problem is to predict label
+only for the center voxel of the input volume.
+
+Finally the formulation of the problem is the following:
+\begin{definition}
+    Let \( I = [0, 1] \) be a set of normalized values
+    of intensities of connectomics volume, \( Y = \{ 1, \dots, 6 \} \) -- set of labels,
+    \( k \) -- subvolume size parameter, \(f_{\theta}: Q \times I^{2^k \times 2^k \times 2^k} \to Y \) -- model
+    with parameter \( \theta \in \Theta \).
+    Given a labeled dataset,
+    \(\mathcal{D} = \{ (x_i, y_i) | x_i \in I^{2^k \times 2^k \times 2^k}, y_i \in Y \}\),
+    where \( x_i \) -- subvolume of size \( 2^k \times 2^k \times 2^k \) and
+    \( y_i \) -- a label of the voxel of subvolume
+    \( x_i \) with index \( (2^{k-1},2^{k-1},2^{k-1}) \) (center voxel) and the loss functional
+    \( \mathcal{L}: Q \times I^{2^k \times 2^k \times 2^k} \times Y \to \mathbb{R}_+ \cup \{ 0 \} \).
+    The center voxel classification task is to find such as model parameter \( \theta' \in \Theta \) that:
+    \begin{equation}
+        \theta' = \arg \min\limits_{\theta \in \Theta} \frac{1}{|\mathcal{D}|} \mathcal{L}(f_{\theta}(x_i), y_i)
+    \end{equation}
+\end{definition}
+Throughout our project we will vary model \( f \) but the formulation will remain exactly the same.
 
 \subsection{Probation of classical approaches}
+The first types of models are inspired by the result of data analysis and in particular the result
+(table \ref{tab:data_ttest}) that difference of means of almost all classes are statistically significant.
+So it is worth to check whether the value of intensity of voxel itself is enough to predict a correct label.
+
+We d o it in the following way: take intensities of all labeled voxels and train a
+classical ML model:
+\begin{itemize}
+    \item Decision tree \cite{breiman2017classification}
+    \item Random forest \cite{breiman2001random}
+    \item Ada boosting on trees \cite{hastie2009multi}
+    \item Gradient boosting on trees \cite{friedman2001greedy}
+\end{itemize}
+Since it is clear that only intensities probably will not be enough to correctly predict
+labels we use the same list of models but extend inputs by adding a hand crafted features by
+applying well known convolutional kernels to the train slices, in particular:
+\begin{itemize}
+    \item Sobel's \(x \) and \(y\) derivatives
+    \item Prewitt's \(x \) and \(y\) derivatives
+    \item Laplace
+    \item Gradient magnitudes from sobel and prewitt gradients
+\end{itemize}
+But as it will be shown in the subsection \ref{sec:voxelwise_expr} even these features are
+not enough to perform segmentation with appropriate quality therefore we need more complex models
+and extension of an input to subvolumes.
 
 \subsection{Convolutional neural networks}
 
@@ -272,6 +330,8 @@ is equal to input shape, therefore to train a model to segment volumes the label
 \subsection{Postprocessing}
 
 \section{Experiments}
+
+\subsection{Classical voxelwise models} \label{sec:voxelwise_expr}
 
 \subsection{Efficiency of pretraining}
 
