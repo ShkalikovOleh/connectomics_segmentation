@@ -658,18 +658,56 @@ labeled in the dataset voxels we still will have a high values of metrics.
 
 \subsection{Efficiency of pretraining}
 
+Since the pretraining make sense mostly for big models we evaluate the efficiency of pretraining techniques
+on \textit{ConvNext} architecture. The results are given in the table \ref{tab:pretraining_comparison}.
+
 \begin{table}[ht]
     \centering
-    \begin{tabular}{|p{1.2cm}| >{\centering\arraybackslash}p{1cm}|c|c|c| }
+    \begin{tabular}{|c| >{\centering\arraybackslash}p{1cm}|c|c|c| }
         \hline
-        \textbf{Model} & \textbf{Pretr. type} & \textbf{Input shape} & \textbf{Loss} & \textbf{F1} \\
+        \textbf{Model}            & \textbf{Pretr. type} & \textbf{Input shape} & \textbf{Loss} & \textbf{F1}    \\
         \hline
-        
+        \multirow{3}{*}{ConvNext} & CR1                  & \multirow{3}{*}{32}  & CE            & \textbf{0.741} \\
+                                  & CR0                  &                      & CE            & 0.682          \\
+                                  & -                    &                      & CE            & 0.701          \\
+        \hline
+        \multirow{3}{*}{ConvNext} & CR0                  & \multirow{3}{*}{32 } & Focal2        & \textbf{0.687} \\
+                                  & -                    &                      & Focal2        & 0.5312         \\
+                                  & -                    &                      & Focal4        & 0.492          \\
+        \hline
+        \multirow{2}{*}{ConvNext} & CR1                  & \multirow{2}{*}{16 } & CE            & 0.603          \\
+                                  & -                    &                      & CE            & \textbf{0.728} \\
         \hline
     \end{tabular}
-    \caption{Metrics for top 5 CNN models}
-    \label{tab:cnn_raw_metrics}
+    \caption{Comparison of ConvNext models with and without pretraining. CR\(N\) means center voxel regression
+        with padding equals to \(N\) and
+        Focal\(A\) means the Focal Loss with \( \gamma = A \).}
+    \label{tab:pretraining_comparison}
 \end{table}
+
+As we can see for both biggest models the center regression pretraining have managed to improve the performance of the
+finetuned model. Another interesting note is that masking with non zero padding works better than just masking the center voxel and random
+voxels (in this case with dropout probability \( 0.3 \)) which can be explained by the fact that adjacent pixels in the
+connectomics usually are similar to each other and therefor during pretraining we fit models just to copy the value of
+non masked adjacent to the center voxel.
+
+
+
+\begin{figure*}[t]
+    \begin{subfigure}{0.49 \textwidth}
+        \centering
+        \includegraphics[width=0.6\textwidth]{raw_pred.png}
+        \caption{raw predictions}
+    \end{subfigure}
+    \begin{subfigure}{0.49 \textwidth}
+        \centering
+        \includegraphics[width=0.6\textwidth]{crf_pred.png}
+        \caption{CRF postprpocesed}
+    \end{subfigure}
+    \caption{Comparison of raw and postprpocesed prediction of the best CNN model \textit{4res} trained with CE loss
+        with an input shape \( 32 \times 32 \times 32 \) for the test slice in the XY plane}
+    \label{fig:crf_comparison}
+\end{figure*}
 
 \subsection{Postprocessing quality}
 
@@ -717,22 +755,6 @@ Based only on the metrics the postprpocesed results are worse, but actually if w
 e.g the figure \ref{fig:crf_comparison}. The postprpocesed precisions more structurally correct, i.e. CRF has closed mitochondria
 membranes and after postprocessing all mitochondria surrounded by membranes. Also CRF has replaced wrongly predicted
 to vesicles labels in the right bottom mitochondrion to the proper mitochondrion labels.
-
-\begin{figure*}[t]
-    \begin{subfigure}{0.49 \textwidth}
-        \centering
-        \includegraphics[width=0.6\textwidth]{raw_pred.png}
-        \caption{raw predictions}
-    \end{subfigure}
-    \begin{subfigure}{0.49 \textwidth}
-        \centering
-        \includegraphics[width=0.6\textwidth]{crf_pred.png}
-        \caption{CRF postprpocesed}
-    \end{subfigure}
-    \caption{Comparison of raw and postprpocesed prediction of the best CNN model \textit{4res} trained with CE loss
-        with an input shape \( 32 \times 32 \times 32 \) for the test slice in the XY plane}
-    \label{fig:crf_comparison}
-\end{figure*}
 
 \section{Directions of further research}
 \subsection{Context-free formal grammars}
