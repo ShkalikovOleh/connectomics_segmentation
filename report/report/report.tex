@@ -296,6 +296,18 @@ Finally the formulation of the problem is the following:
 \end{definition}
 Throughout our project we will vary model \( f \) but the formulation will remain exactly the same.
 
+The task description \cite{proj_tasks} of this project also recommends to analyze possibilities of augmenting dataset
+by generating artificial data (mask and volumes) with use of other models. Generative adversarial networks
+(GANs) (e.g. CycleGAN \cite{zhu2017unpaired}) is usually used for this task and it has been proven that in such a way
+augmented datasets can improve the performance of the model \cite{shumilo2023generative,sandfort2019data}.
+But despite that all problems with GANs, like
+unstable training, mode collapse (which is not harmful for our task, because connectomics
+volume images have similar structure and properties) the issues that generated data
+may have a worse quality than real, can be solved, we still can not used them.
+The reason is that if we aim to generate artificial labels we need to train a discriminator to
+distinguish between real and fake masks. But since we have only 3 labeled slices in the train split,
+i.e. only 3 mask examples, we don't have enough data to train it.
+
 \subsection{Probation of classical approaches}
 The first type of models are inspired by the result of data analysis and in particular the result
 (table \ref{tab:data_ttest}) that difference of means of almost all classes are statistically significant.
@@ -337,15 +349,16 @@ Another point which is worth to discuss is ability to make a tiled prediction,
 i.e. without changing a model get as an input extended subvolume and output
 predictions not only for the center voxel but for center region in accordance to extension of the input,
 e.g. if model standard input has a shape \( 32 \times 32 \times 32 \) pass subvolume with a shape
-\( 33 \times 33 \times 33 \) and get \( 2 \times 2 \times 2 \) prediction for center region.
+\( 33 \times 33 \times 33 \) and get \( 2 \times 2 \times 2 \) prediction for a center region.
 We investigated this problem and end up with a conclusion that usually it is not possible:
 the reason is downsampling layers which have strides greater than 1 (usually 2) and are present in
 every our CNN architecture. If we want to predict a label for adjacent center voxel we have
 to have a stride 1, but then further layers will have a wrong input features. We can solve it for convolutional
 layers with use of dilation equal to the stride of the previous downsampling layer, but only until the next layer
 with stride greater than 1 whereas we always have several downsampling layers in out networks.
+
 The easiest way to prove it is to think in terms of a shape of the outputs of a CNN backbone and input features:
-we just add \( m \in \mathbb{N} \) pixel to input along one or several dimension, but every downsampling layer divide a
+we just add \( m \in \mathbb{N} \) pixel to an input along one or several dimension, but every downsampling layer divide a
 shape of features by \( n \in \mathbb{N} \) times (e.g. layers with stride 2 half every feature spatial axis shape)
 therefore the final features from the backbone won't be equal to the number of features for standard input plus extension (\(m\)).
 
@@ -372,13 +385,51 @@ and train our model to predict the intensities in the masked region. This method
 on the findings from section \ref{sec:data_analysis} that means of intensity for almost all classes are different therefore intensity itself
 can help to predict a correct label.
 
-The second approach is a training of the variational autoencoder (VAE) \cite{kingma2013auto} where we mask the center voxel
-(optionally with padding, i.e. some center region) and reconstruct the whole input (including the masked
+The second approach is a training of the variational autoencoder (VAE) \cite{kingma2013auto} where we
+optionally mask the center voxel (optionally with padding, i.e. some center region) and reconstruct the whole input (including the masked
 center region) using VAE framework. This approach is adapted from \cite{woo2023convnext} but we
-mask interesting for us center voxel/region and usually use different network architecture.
+optionally mask interesting for us center voxel/region and usually use different network architecture.
 
 \subsection{Postprocessing}
+Since models predict a label for a particular voxel independently
+(adjacent voxels only shares part of an input) it is possible that the final predicted
+mask for the whole volume will be non consistent, i.e. similar, close to each voxel will have
+a different labels and the whole output will look noisy. Some 2D CNN segmentation models, like DeepLab \cite{chen2017deeplab},
+solve this issue by using CRF model on the predictions of a model. But whereas the usual approach
+to smooth predictions is a local CRF (which work on a voxel and its neighborhood), we use a fully connected CRF,
+i.e. CRF where every voxel of the predicted volume is connected. This
+will allows us to guarantee not only a local consistency, but capture a global structure as well.
 
+But since solving the discrete optimization problem for fully connected graph for meaningful
+size of volume can become computationally intractable we constrained the CRF model to have
+a specific type which can be solved efficiently, i.e. CRF with gaussian edge potentials \cite{krahenbuhl2011efficient}.
+
+The energy function for this CRF is the following:
+\begin{equation*}
+    E(\mathbf{x}) =\sum\limits_{i \in V} \theta_i (\mathbf{x_i}) +
+    \sum\limits_{ij \in E} \theta_{ij} (\mathbf{x_i}, \mathbf{x_j})
+\end{equation*}
+where \( G = (V, E) \) -- complete graph where every voxel \( v \in V \) is a node,
+\(\mathbf{x}_i \in \{0, 1\}^{|Y|} \) -- one hot encoding of labeling of the voxel \( i \) (\(Y\) -- set of labels),
+\( \theta_i = -\ln{p_i} \) -- unary term depended on the predicted probabilities \( p_i \) of labels,
+\(\mathbf{x} = (\mathbf{x_i} | i \in V) \) -- the whole labeling.
+And the crucial element of the model which allows us to efficiently infer it is the pairwise term:
+\begin{equation}  \label{eq:crf_pairwise_term}
+    \begin{aligned}
+        \theta_{ij} (\mathbf{x_i}, \mathbf{x_j}) = \mu(\mathbf{x_i}, \mathbf{x_j})
+        \Bigg[ \omega_1 \exp \left( -\frac{\| l_i - l_j \|^2}{2 \theta_{\alpha}^2}
+        -\frac{\| I_i - I_j \|^2}{2 \theta_{\beta}^2} \right) + \\
+            \omega_2 \exp \left( -\frac{\| l_i - l_j \|^2}{2 \theta_{\gamma}^2} \right) \Bigg]
+    \end{aligned}
+\end{equation}
+where \( \mu(\mathbf{x_i}, \mathbf{x_j}): \{0, 1\}^{|Y|} \times \{0, 1\}^{|Y|} \to \mathbb{R} \)
+-- labels incompatibility term, \( l_i \) -- location of the voxel \( i \) in the volume,
+\( I_i \in [0, 1] \) -- normalized intensity of voxel \( i \),
+\( \theta_{\alpha}, \theta_{\beta}, \theta_{\gamma} \in \mathbb{R}_+ \) -- parameters of the
+importance of corresponding difference in intensity and location.
+
+This method of postprocessing is to be applied to the whole slices which we have in the dataset during training and
+evaluation and to subvolumes when model generate predictions for the whole raw data volume because of memory limits.
 
 \section{Experiments}
 
