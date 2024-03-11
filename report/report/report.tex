@@ -6,6 +6,7 @@
 \usepackage{booktabs} % for professional tables
 \usepackage{hyperref}
 \usepackage{multirow}
+\usepackage{array}
 \urlstyle{same}
 \hypersetup{colorlinks=true, linkcolor=black, citecolor=black, urlcolor=blue}
 
@@ -114,8 +115,9 @@ validation and test splits: 3 slices for each split, but every train slice has a
 The locations of slices in the raw volume are denoted in the table~\ref{tab:data_loc}.
 \begin{table}[t]
     \centering
-    \begin{tabular}{c|c|c|c}
-        Split                             & X range            & Y range            & Z range           \\
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        \textbf{Split}                    & \textbf{X range}   & \textbf{Y range}   & \textbf{Z range}  \\
         \hline
 
         \multirow[vpos]{3}{*}{Train}      & \( [510, 1109] \)  & \( [200, 799] \)   & 200               \\
@@ -397,7 +399,7 @@ The basic building blocks of almost all models is depicted on the figure \ref{fi
 In order to describe it let's introduce the notation:
 \begin{itemize}
     \itemsep0em
-    \item Conv3D[\( kernel, stride, padding, dilation, feat, norm, act\)] -- convolution block as on the figure \ref{fig:conv_block}
+    \item Conv3D[\( kernel, stride, padding, dilation, feat, norm, \) \( act\)] -- convolution block as on the figure \ref{fig:conv_block}
           where 3D convolution layer has corresponding kernel size, padding, size and dilation, with  equals
           number of output features is \( feat \), normalization layer is
           as it described by \( norm \) and activation is \( act \).
@@ -447,6 +449,7 @@ equals to the shape of features of the output of the backbone. We have the follo
         \bottomrule
     \end{tabular}
     \caption{Architectures of handcrafted backbones}
+    \label{tab:arch}
 \end{table}
 
 In short words, \textit{3layer} and \textit{4conv} models is just a simple CNNs where
@@ -539,13 +542,13 @@ where \( G = (V, E) \) -- complete graph where every voxel \( v \in V \) is a no
 And the crucial element of the model which allows us to efficiently infer it is the pairwise term:
 \begin{equation}  \label{eq:crf_pairwise_term}
     \begin{aligned}
-        \theta_{ij} (\mathbf{x_i}, \mathbf{x_j}) = \mu(\mathbf{x_i}, \mathbf{x_j})
-        \Bigg[ \omega_1 \exp \left( -\frac{\| l_i - l_j \|^2}{2 \theta_{\alpha}^2}
+        \theta_{ij} (\mathbf{x_i}, \mathbf{x_j}) = \mu_1(\mathbf{x_i}, \mathbf{x_j})
+        \exp \left( -\frac{\| l_i - l_j \|^2}{2 \theta_{\alpha}^2}
         -\frac{\| I_i - I_j \|^2}{2 \theta_{\beta}^2} \right) + \\
-            \omega_2 \exp \left( -\frac{\| l_i - l_j \|^2}{2 \theta_{\gamma}^2} \right) \Bigg]
+        \mu_2 (\mathbf{x_i}, \mathbf{x_j}) \exp \left( -\frac{\| l_i - l_j \|^2}{2 \theta_{\gamma}^2} \right)
     \end{aligned}
 \end{equation}
-where \( \mu(\mathbf{x_i}, \mathbf{x_j}): \{0, 1\}^{|Y|} \times \{0, 1\}^{|Y|} \to \mathbb{R} \)
+where \( \mu_k(\mathbf{x_i}, \mathbf{x_j}): \{0, 1\}^{|Y|} \times \{0, 1\}^{|Y|} \to \mathbb{R}, k \in \{ 1, 2 \} \)
 -- labels incompatibility term, \( l_i \) -- location of the voxel \( i \) in the volume,
 \( I_i \in [0, 1] \) -- normalized intensity of voxel \( i \),
 \( \theta_{\alpha}, \theta_{\beta}, \theta_{\gamma} \in \mathbb{R}_+ \) -- parameters of the
@@ -555,12 +558,181 @@ This method of postprocessing is to be applied to the whole slices which we have
 evaluation and to subvolumes when model generate predictions for the whole raw data volume because of memory limits.
 
 \section{Experiments}
+In order to compare different model architecture and study impact of input volume size and pretraining we
+have conducted a lot of experiments. All experiments that involves CNNs have been run on NVIDIA A100 with 40GB of GPU memory
+and used Adam optimizer with parameters \( \beta_1=0.9, \beta_2=0.999 \), the weight decay was \( 5 \dot 10^{-4} \)
+and the learning rate was set to \( 10^{-3} \). We have measured a lot classification metrics for every
+particular class as well as overall, such as precision, recall, F1, AP (average precision) and cohen kappa,
+but in this section we will show only overall metrics on the test split: averaged F1, AP and cohen kappa (\(\varkappa\)).
+
+For this research project we have written fully configurable via yaml files code which is available under the following
+link\footnote{\url{https://github.com/ShkalikovOleh/connectomics_segmentation}}.
 
 \subsection{Classical voxelwise models} \label{sec:voxelwise_expr}
+First of all we have evaluated voxelwise classical ML models in order to check whether they are powerful enough to
+correctly predict labels. In order to do this we train using Scikit-Learn \cite{scikit-learn} all described above
+voxelwise models with default hyperparamets on 1 train slice (in the XZ plane)
+and evaluate them on 1 test slice (in the YZ plane). The results of evaluation are given in the table
+\ref{tab:voxelwise_metrics}.
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{|c|c|c|c|c|c| }
+        \hline
+        \textbf{Model}                 & \textbf{Features} & \textbf{F1}    & \textbf{AP}    & \( \mathbf{\varkappa} \) \\
+        \hline
+        \multirow{2}{*}{Decision tree} & 1                 & 0.278          & 0.345          & 0.656                    \\
+                                       & 8                 & 0.317          & 0.261          & 0.584                    \\
+        \hline
+        \multirow{2}{*}{Random forest}
+                                       & 1                 & 0.278          & 0.345          & 0.655                    \\
+                                       & 8                 & \textbf{0.319} & 0.315          & 0.618                    \\
+        \hline
+        \multirow{2}{*}{AdaBoost}
+                                       & 1                 & 0.277          & 0.219          & 0.654                    \\
+                                       & 8                 & 0.281          & 0.212          & \textbf{0.671}           \\
+        \hline
+        \multirow{2}{*}{GradientBoost}
+                                       & 1                 & 0.278          & 0.346          & 0.656                    \\
+                                       & 8                 & 0.282          & \textbf{0.355} & 0.676                    \\
+        \hline
+    \end{tabular}
+    \caption{Metrics for voxelwise models}
+    \label{tab:voxelwise_metrics}
+\end{table}
+
+From values of F1 we can conclude that models trained on handcrafted features outperform their counterparts
+which used only the intensity values, but as it follows from AP and cohen kappa these models (in particular random forest and decision tree)
+are less confident in their predictions. The analysis of per class metrics shows us the crucial problem of all these models: they all have a good predictions
+only for 2 top class whereas all other sometimes even not present in the output of the model. Also it is worth to mention that
+these models are overfited to the train dataset, because metric values are usually 2 times higher for the train split.
+
+The results shows us that we really need more complex models and extended to subvolume inputs, because segmentation
+scores are relatively low.
+
+\subsection{Segmentation models evaluation}
+
+In total by varying architectures, losses and hyperparameters we have trained and evaluated 35 CNN models.
+The metrics for top 5 model according to the averaged F1 are denoted in the table \ref{tab:cnn_raw_metrics}.
+All logs of experiments are available under the following link\footnote{\url{https://wandb.ai/shkalikov-oleh/connectomics_segmentation}}.
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{|p{1.2cm}| >{\centering\arraybackslash}p{1cm}|c|c|c|c|c|}
+        \hline
+        \textbf{Model} & \textbf{Input shape} & \textbf{Loss} & \textbf{F1}    & \textbf{AP}    & \( \mathbf{\varkappa} \) \\
+        \hline
+        4res           & 32                   & CE            & \textbf{0.913} & \textbf{0.962} & \textbf{0.939}           \\
+        \hline
+        4conv          & 32                   & CE            & 0.906          & 0.952          & 0.938                    \\
+        \hline
+        4res\_ln       & 32                   & CE            & 0.905          & 0.959          & 0.937                    \\
+        \hline
+        dil            & 32                   & CE            & 0.885          & 0.95           & 0.923                    \\
+        \hline
+        4res           & 16                   & CE            & 0.883          & 0.933          & 0.926                    \\
+        \hline
+    \end{tabular}
+    \caption{Metrics for top 5 CNN models}
+    \label{tab:cnn_raw_metrics}
+\end{table}
+
+The best model according to the conducted experiments is a ResNet \textit{4res} as it is described in the table \ref{tab:arch} with
+an input shape \( 32 \times 32 \times 32 \) trained with cross entropy loss. Moreover, the same model we have on the 3 and 5 places but
+with different input shapes and normalization layers.
+
+The analogon of SOTA 2D classification model \textit{ConvNext} perform by far worse than proposed handcrafted backbones, in particular the
+best model of this type which was trained with CE loss on the input volumes with a shape \( 32 \times 32 \times 32 \) have only
+0.741 averaged F1 score. The main reason for this is a poor performance on the minor class. The possible explanation is the fact, that
+bigger model requires more diverse and bigger dataset in order to train all their weights. Thus we can conclude that smaller models
+is more performant that bigger ones for out task.
+
+Surprisingly all models which was trained with FocalLoss (with parameters \( \gamma = 2 \) and \( \gamma=4 \) have a worse metric values than exactly the same models trained with
+cross entropy. In the situation when we have such an class imbalance it was expected to get an opposite results. One of the possible
+explanation is a incorrect implementation of the loss or the fact that we haven't test all values of loss hyperparameters.
+
+Also it worth to mention that since a lot of the most interesting, the hardest to classify voxels have not been labeled in the given slices,
+we cannot fully rely on the computed metrics, because even if our model misclassify all complicated regions but return the correct labels for
+labeled in the dataset voxels we still will have a high values of metrics.
+
 
 \subsection{Efficiency of pretraining}
 
-\subsection{Segmentation models evaluation}
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{|p{1.2cm}| >{\centering\arraybackslash}p{1cm}|c|c|c| }
+        \hline
+        \textbf{Model} & \textbf{Pretr. type} & \textbf{Input shape} & \textbf{Loss} & \textbf{F1} \\
+        \hline
+        
+        \hline
+    \end{tabular}
+    \caption{Metrics for top 5 CNN models}
+    \label{tab:cnn_raw_metrics}
+\end{table}
+
+\subsection{Postprocessing quality}
+
+In order to evaluate the quality of postprocessing we the predictions of the CNN models and pass them apply described above
+CRF model to them with the following parameters: \( \theta_{\alpha}=\theta_{\beta}=\theta_{\gamma} = 1 \) and incompatibility
+term for the bilateral term (first term of \eqref{eq:crf_pairwise_term}) was equal to
+\begin{align*}
+    \Upsilon = \begin{pmatrix}
+                   0   & 1.0 & 100 & 1.0 & 1.0 & 100 \\
+                   1.0 & 0   & 100 & 10  & 0.5 & 100 \\
+                   100 & 100 & 0   & 5.0 & 100 & 100 \\
+                   1.0 & 10  & 5.0 & 0   & 100 & 100 \\
+                   1.0 & 0.5 & 100 & 100 & 0   & 100 \\
+                   100 & 100 & 100 & 100 & 100 & 0   \\
+               \end{pmatrix} \\
+    \mu_1(\mathbf{x_i}, \mathbf{x_j}) = \Upsilon_{\arg \max \mathbf{x_i}, \arg \max \mathbf{x_j}}
+\end{align*}
+and for the second term of \eqref{eq:crf_pairwise_term} we use simple Potts model where
+\( \mu_2(\mathbf{x_i}, \mathbf{x_j}) = 1 \) if and only if the labels \( \mathbf{x_i}, \mathbf{x_j} \) are different.
+
+All this parameters have been found imperially by comparing outputs of CRF models. The metrics for the postprpocesed predictions of top 5 models can be found in the table \ref{tab:cnn_crf_metrics}.
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{|p{1.2cm}| >{\centering\arraybackslash}p{1cm}|c|c|c|c|}
+        \hline
+        \textbf{Model} & \textbf{Input shape} & \textbf{Loss} & \textbf{F1}    & \( \mathbf{\varkappa} \) \\
+        \hline
+        4res           & 32                   & CE            & 0.901          & \textbf{0.937}           \\
+        \hline
+        4conv          & 32                   & CE            & \textbf{0.902} & 0.935                    \\
+        \hline
+        4res\_ln       & 32                   & CE            & 0.897          & 0.93                     \\
+        \hline
+        dil            & 32                   & CE            & 0.828          & 0.868                    \\
+        \hline
+        4res           & 16                   & CE            & 0.878          & 0.922                    \\
+        \hline
+    \end{tabular}
+    \caption{Metrics for postprpocesed outputs of top 5 CNN models}
+    \label{tab:cnn_crf_metrics}
+\end{table}
+
+Based only on the metrics the postprpocesed results are worse, but actually if we look at the result it is even better,
+e.g the figure \ref{fig:crf_comparison}. The postprpocesed precisions more structurally correct, i.e. CRF has closed mitochondria
+membranes and after postprocessing all mitochondria surrounded by membranes. Also CRF has replaced wrongly predicted
+to vesicles labels in the right bottom mitochondrion to the proper mitochondrion labels.
+
+\begin{figure*}[t]
+    \begin{subfigure}{0.49 \textwidth}
+        \centering
+        \includegraphics[width=0.6\textwidth]{raw_pred.png}
+        \caption{raw predictions}
+    \end{subfigure}
+    \begin{subfigure}{0.49 \textwidth}
+        \centering
+        \includegraphics[width=0.6\textwidth]{crf_pred.png}
+        \caption{CRF postprpocesed}
+    \end{subfigure}
+    \caption{Comparison of raw and postprpocesed prediction of the best CNN model \textit{4res} trained with CE loss
+        with an input shape \( 32 \times 32 \times 32 \) for the test slice in the XY plane}
+    \label{fig:crf_comparison}
+\end{figure*}
 
 \section{Directions of further research}
 \subsection{Context-free formal grammars}
@@ -570,7 +742,7 @@ evaluation and to subvolumes when model generate predictions for the whole raw d
 \bibliography{../references.bib}
 \bibliographystyle{ieeetr}
 
-\onecolumn
-\section*{Appendix} \label{sec:appendix}
+% \onecolumn
+% \section*{Appendix} \label{sec:appendix}
 
 \end{document}
