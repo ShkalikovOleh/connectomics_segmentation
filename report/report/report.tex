@@ -560,7 +560,7 @@ evaluation and to subvolumes when model generate predictions for the whole raw d
 \section{Experiments}
 In order to compare different model architecture and study impact of input volume size and pretraining we
 have conducted a lot of experiments. All experiments that involves CNNs have been run on NVIDIA A100 with 40GB of GPU memory
-and used Adam optimizer with parameters \( \beta_1=0.9, \beta_2=0.999 \), the weight decay was \( 5 \dot 10^{-4} \)
+and used Adam \cite{kingma2014adam} optimizer with parameters \( \beta_1=0.9, \beta_2=0.999 \), the weight decay was \( 5 \cdot 10^{-4} \)
 and the learning rate was set to \( 10^{-3} \). We have measured a lot classification metrics for every
 particular class as well as overall, such as precision, recall, F1, AP (average precision) and cohen kappa,
 but in this section we will show only overall metrics on the test split: averaged F1, AP and cohen kappa (\(\varkappa\)).
