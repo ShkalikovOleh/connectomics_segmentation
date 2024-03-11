@@ -27,15 +27,6 @@
 \usepackage{graphicx}
 \graphicspath{{../assets}}
 
-\usepackage{tikz}
-% \usetikzlibrary{shapes.geometric, arrows}
-% \usetikzlibrary{calc}
-
-% \tikzstyle{main_node} = [circle, minimum width=1cm,text centered, draw=black, fill=red!30]
-% \tikzstyle{neigh_node} = [circle, minimum width=1cm,text centered, draw=black, fill=green!30]
-% \tikzstyle{node} = [circle, minimum width=1cm,text centered, draw=black, fill=cyan!30]
-% \tikzstyle{arrow} = [thick,->,>=stealth]
-
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 
@@ -52,6 +43,12 @@
     every axis plot/.append style={thick},
     },
 }
+
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows}
+\usetikzlibrary{calc}
+\usetikzlibrary{positioning}
+\usetikzlibrary{fit}
 
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}{Lemma}
@@ -337,9 +334,135 @@ not enough to perform segmentation with appropriate quality therefore we need mo
 and extension of inputs to subvolumes.
 
 \subsection{Convolutional neural networks}
+
+\begin{figure}[t]
+    \centering
+    \begin{subfigure}[t]{0.2 \textwidth}
+        \centering
+        \begin{tikzpicture}[
+                module/.style={draw, very thick, rounded corners, minimum
+                        width=15ex},
+                conv/.style={module, minimum height = 0.85cm, fill=red!20},
+                norm/.style={module, minimum height = 0.85cm, fill=orange!20},
+                act/.style={module, minimum height = 0.85cm, fill=cyan!20},
+                arrow/.style={-stealth', thick, rounded corners},
+            ]
+
+            \node[conv, align=center] (conv_layer) {3D \\ convolution};
+            \node[above=of conv_layer, norm, align=center] (norm_layer) {Norm\\layer};
+            \node[above=of norm_layer, act, align=center] (activation) {Activation};
+
+            % \node[fit={(mha)(addnorm2)(mharesidual)(ln1residualleft)}
+            %     draw, ultra thick, rounded corners,
+            % ] (encoder) {};
+
+            \draw[arrow] (conv_layer) -- (norm_layer);
+            \draw[arrow] (norm_layer) -- (activation);
+        \end{tikzpicture}
+        \caption{Convolutional block}
+        \label{fig:conv_block}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.28 \textwidth}
+        \centering
+        \begin{tikzpicture}[
+                module/.style={draw, very thick, rounded corners, minimum
+                        width=15ex},
+                main/.style={module, yshift = 0.6cm, minimum height = 0.85cm, fill=green!20},
+                res/.style={module, xshift = -5ex, minimum height = 0.85cm, fill=cyan!20},
+                arrow/.style={-stealth', thick, rounded corners},
+            ]
+
+            \node[align=center] (input) {x};
+            \node[above=of input, main, align=center] (main_module) {Main \\ module};
+            \node[right=of main_module, res, align=center] (res_module) {Residual \\ module};
+            \node[above=of main_module, draw, thick, circle] (res_op){$op$};
+
+            \draw[arrow] (input) -- (main_module);
+            \draw[arrow] (input) -| (res_module);
+            \draw[arrow] (main_module) -- (res_op);
+            \draw[arrow] (res_module) |- (res_op);
+        \end{tikzpicture}
+        \caption{Residual block}
+        \label{fig:res_block}
+    \end{subfigure}
+    \caption{CNN building blocks}
+    \label{fig:blocks}
+\end{figure}
+
 The next type of models is 3D convolutional neural networks (CNN) which have shown their efficiency
 on the similar connectomics segmentation tasks. We have implemented a variety of architectures for our
-research. In total we end up with
+research. In total we end up with 6 different types of architectures.
+The basic building blocks of almost all models is depicted on the figure \ref{fig:blocks}.
+In order to describe it let's introduce the notation:
+\begin{itemize}
+    \itemsep0em
+    \item Conv3D[\( kernel, stride, padding, dilation, feat, norm, act\)] -- convolution block as on the figure \ref{fig:conv_block}
+          where 3D convolution layer has corresponding kernel size, padding, size and dilation, with  equals
+          number of output features is \( feat \), normalization layer is
+          as it described by \( norm \) and activation is \( act \).
+    \item Conv3D[\( feat \)] -- convolution block of specific type which refers to
+          Conv3D[\( 3, 1, 1, 0, feat, batch, ReLU \)]
+    \item Conv3DGELU[\( feat \)] -- convolution block of specific type which refers to
+          Conv3D[\( 3, 1, 1, 0, feat, batch, GELU \)]
+    \item Conv3DGELUPad[\( feat \)] -- convolution block of specific type which refers to
+          Conv3D[\( 3, 1, 1, 1, feat, batch, GELU \)]
+    \item Conv3DGELUPad[\( feat \)] -- convolution block of specific type which refers to
+          Conv3D[\( 3, 1, 1, 1, feat, batch, GELU \)]
+    \item Conv3DLNPad[\( feat \)] -- convolution block of specific type which refers to
+          Conv3D[\( 3, 1, 1, 1, feat, layer, GELU \)]
+    \item Res[\( MainModule, ResModule, Op \)] -- residual module as on the figure \ref{fig:res_block}.
+    \item Res[\( MainModule \)] -- default residual module which refers to Res with indentity \( ResModule \) and
+          summation as an operation
+    \item Res2Conv[\( feat \)] -- residual module with 2 convolutional blocks with GELU activation:
+          Res[\( Conv3DGELUPad[feat] - Conv3DGELUPad[feat] \)]
+    \item Res2ConvLN[\( feat \)] -- residual module with 2 convolutional blocks with GELU activation and layer norm:
+          Res[\( Conv3DLNPad[feat] - Conv3DLNPad[feat] \)]
+    \item Concat[\( MainModule, ResModule\)] -- residual module where operation \( Op \) is a concatenation along the channel axis
+    \item AvgPool -- average 3D pooling with kernel size \( 2 \) and stride \( 2 \)
+    \item MaxPool -- maximum 3D pooling with kernel size \( 2 \) and stride \( 2 \)
+\end{itemize}
+
+All our architectures differs only in backbones (features extractors) whereas the head always
+has the same architecture: it is a linear layer represented as an usual 3D convolution with kernel size
+equals to the shape of features of the output of the backbone. We have the following custom backbones
+(input shape refers to the size along the one dimension):
+\begin{table}[ht]
+    \begin{tabular}{p{1.2cm}p{1cm}p{5.3cm}}
+        Name      & Input shape & Architecture                                                                                                                                                         \\
+        \toprule
+        3layer    & 8           & Conv3D[16] - Conv3D[32] - Conv3D[64] - AvgPool                                                                                                                       \\
+        \hline
+        4conv     & 32          & Conv3DGELU[16] - MaxPool - Conv3DGELU[32] - MaxPool - Conv3DGELU[64] -- Conv3DGELU[128] - AvgPool                                                                    \\
+        \hline
+        4conv\_ln & 32          & Conv3DLN[16] - MaxPool - Conv3DLN[32] - MaxPool - Conv3DLN[64] -- Conv3DLN[128] - AvgPool                                                                            \\
+        \hline
+        4res      & 16, 32      & Conv3DGELUPad[16] - MaxPool - Conv3DGELUPad[32] - Res2Conv[32] - MaxPool - Conv3DGELUPad[64] - Res2Conv[64] - MaxPool - Conv3DGELUPad[128] - Res2Conv[128] - AvgPool \\
+        \hline
+        4res\_ln  & 16, 32      & Conv3DLNPad[16] - MaxPool - Conv3DLNPad[32] - Res2ConvLN[32] - MaxPool - Conv3DLNPad[64] - Res2ConvLN[64] - MaxPool - Conv3DLNPad[128] - Res2ConvLN[128] - AvgPool   \\
+        \hline
+        dil16     & 16          & Conv3D[16] - Concat[Conv3D[3, 1, 0, 3, 32, batch, RELU] -- Conv3D[5, 1, 0, 3, 32, batch, RELU]] --  AvgPool                                                          \\
+        \hline
+        dil       & 32, 64      & Conv3D[16] - MaxPool - Concat[Conv3D[3, 1, 0, 3, 32, batch, RELU] -- Conv3D[5, 1, 0, 3, 32, batch, RELU]] --  AvgPool                                                \\
+        \bottomrule
+    \end{tabular}
+    \caption{Architectures of handcrafted backbones}
+\end{table}
+
+In short words, \textit{3layer} and \textit{4conv} models is just a simple CNNs where
+after every convolutional block we have a downsampling pooling layer, prefix \textit{ln} means using layer normalization
+instead of class batch. \textit{4res} is a 4 stage ResNet where every ResNet block consists of
+two sequential convolutional blocks, we use another convolutional block to change the dimensionality
+of features after every downsampling with pooling layers. And finally \textit{dil} models contain
+a pyramid of features produced by dilated convolutions (with dilation \( 3 \))
+for different kernel sizes: two \( 3 \times 3 \) and one \( 5 \times 5 \),- inspired by \cite{chen2017deeplab} and aims to have bigger
+reception field and handle the problem that adjacent voxels of connectomics usually similar to each other.
+The \textit{dil16} model differs from other only in missing max pooling after first convolutional block.
+
+In addition to handcrafted backbones we adapt state of the art CNN model ConvNext \cite{liu2022convnet} to 3D
+case by changing 2D convolution with 3D counterparts. For an input shape \( 32 \times 32 \times 32 \) we
+reuse exactly the same model architecture as ConvNext-tiny, whereas for \( 16 \times 16 \times 16 \) input's shape we
+changed patch size from \( 4 \) to \(2 \).
 
 As a loss function we use two options: classical cross entropy loss and adapted FocalLoss from
 RetinaNet \cite{lin2017focal} which designated to handle a high class imbalance.
@@ -448,6 +571,6 @@ evaluation and to subvolumes when model generate predictions for the whole raw d
 \bibliographystyle{ieeetr}
 
 \onecolumn
-\section*{Appendix}
+\section*{Appendix} \label{sec:appendix}
 
 \end{document}
