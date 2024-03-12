@@ -238,7 +238,7 @@
 
 \begin{frame}
     \frametitle{ConvNext}
-    We took a SOTA 2D CNN ConvNext\cite{liu2022convnet} and change 2D convolution with 3D.
+    We took a SOTA 2D CNN ConvNext\cite{liu2022convnet} and change 2D convolutions with 3D.
     \begin{figure}
         \includegraphics[width=0.8\textwidth]{convnext.png}
         \caption{ConvNext-tiny architecture\footnote{Image source: \url{https://www.researchgate.net/figure/A-ConvNeXt-Tiny-overall-network-structure-B-ConvNeXt-Block-structure_fig2_367224906}}}
@@ -440,6 +440,18 @@
 
 \begin{frame}
     \frametitle{Conclusions}
+
+    \begin{itemize}
+        \item[$\blacksquare$] Using of CNNs is reasonable
+        \item[$\blacksquare$] Relatively small residual networks works better than bigger models
+        \item[$\blacksquare$] The optimal input shape for used models is \( 32 \times 32 \times 32 \)
+        \item[$\blacksquare$] Postprocessing with CRF improves the structural property of predictions
+        \item[$\blacksquare$] The computed metrics can not represent real quality of models because of
+              unlabeled regions in the dataset
+        \item[$\blacksquare$] Segmentation can benefit from involving structural properties of connectomics
+              into labeling pipeline
+    \end{itemize}
+
 \end{frame}
 
 \section*{References}
