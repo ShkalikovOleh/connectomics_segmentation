@@ -10,6 +10,21 @@
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows}
 \usetikzlibrary{calc}
+\usetikzlibrary{matrix}
+
+\tikzstyle{matrix of math nodes}=[
+  matrix of nodes,
+  % nodes in empty cells,
+  column sep=-\pgflinewidth,
+  row sep=-\pgflinewidth,
+  nodes={draw,
+    minimum size=2em,
+    anchor=center,
+    inner sep=0pt,
+    execute at begin node=$,
+    execute at end node=$
+  }
+]
 
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
@@ -221,6 +236,26 @@
     \end{block}
 \end{frame}
 
+\begin{frame}
+    \frametitle{ConvNext}
+    We took a SOTA 2D CNN ConvNext\cite{liu2022convnet} and change 2D convolution with 3D.
+    \begin{figure}
+        \includegraphics[width=0.8\textwidth]{convnext.png}
+        \caption{ConvNext-tiny architecture\footnote{Image source: \url{https://www.researchgate.net/figure/A-ConvNeXt-Tiny-overall-network-structure-B-ConvNeXt-Block-structure_fig2_367224906}}}
+    \end{figure}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Pretraining techniques}
+
+
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Postprocessing with use of CRF}
+\end{frame}
+
 \section{Experiments}
 
 \begin{frame}
@@ -286,23 +321,22 @@
         \centering
         \begin{tabular}{|c| >{\centering\arraybackslash}p{1cm}|c|c|c| }
             \hline
-            \textbf{Model}            & \textbf{Pretr. type} & \textbf{Input shape} & \textbf{Loss} & \textbf{F1}    \\
+            \textbf{Model}            & \textbf{Pretr. type} & \textbf{Input shape} & \textbf{Loss}        & \textbf{F1}    \\
             \hline
-            \multirow{3}{*}{ConvNext} & CR1                  & \multirow{3}{*}{32}  & CE            & \textbf{0.741} \\
-                                      & CR0                  &                      & CE            & 0.682          \\
-                                      & -                    &                      & CE            & 0.701          \\
+            \multirow{3}{*}{ConvNext} & CR1                  & \multirow{3}{*}{32}  & CE                   & \textbf{0.741} \\
+                                      & CR0                  &                      & CE                   & 0.682          \\
+                                      & -                    &                      & CE                   & 0.701          \\
             \hline
-            \multirow{3}{*}{ConvNext} & CR0                  & \multirow{3}{*}{32 } & Focal2        & \textbf{0.687} \\
-                                      & -                    &                      & Focal2        & 0.531          \\
-                                      & -                    &                      & Focal4        & 0.492          \\
+            \multirow{3}{*}{ConvNext} & CR0                  & \multirow{3}{*}{32 } & Focal (\(\gamma=2\)) & \textbf{0.687} \\
+                                      & -                    &                      & Focal (\(\gamma=2\)) & 0.531          \\
+                                      & -                    &                      & Focal (\(\gamma=4\)) & 0.492          \\
             \hline
-            \multirow{2}{*}{ConvNext} & CR1                  & \multirow{2}{*}{16 } & CE            & 0.603          \\
-                                      & -                    &                      & CE            & \textbf{0.728} \\
+            \multirow{2}{*}{ConvNext} & CR1                  & \multirow{2}{*}{16 } & CE                   & 0.603          \\
+                                      & -                    &                      & CE                   & \textbf{0.728} \\
             \hline
         \end{tabular}
         \caption{Comparison of ConvNext models with and without pretraining. CR\(N\) means center voxel regression
-            with padding equals to \(N\) and
-            Focal\(A\) means the Focal Loss with \( \gamma = A \).}
+            with padding equals to \(N\)}
         \label{tab:pretraining_comparison}
     \end{table}
 \end{frame}
@@ -353,6 +387,54 @@
 \end{frame}
 
 \section{Directions of further research}
+\begin{frame}
+    \frametitle{Context free grammars}
+    \begin{minipage}{0.49\textwidth}
+        CFGs describe structural properties of the text.
+
+        For example the grammar for balanced parentheses in the Chomsky normal form
+        is the following:
+        \begin{itemize}
+            \item \( S \to SS | LR \)
+            \item \( L \to aS | a \)
+            \item \( R \to Sb | b \)
+            \item \( a \to ( \)
+            \item \( b \to \;) \)
+        \end{itemize}
+    \end{minipage}
+    \begin{minipage}{0.49\textwidth}
+        \begin{figure}
+            \begin{tikzpicture}
+                \matrix[matrix of math nodes, ampersand replacement=\&]
+                {
+                    S           \&             \&             \&             \&   \&   \\
+                    \varnothing \& \varnothing \&             \&             \&   \&   \\
+                    S           \& \varnothing \& \varnothing \&             \&   \&   \\
+                    L \& R \& \varnothing \& \varnothing \&   \&                       \\
+                    \varnothing \& S \& \varnothing \& \varnothing \& S \&             \\
+                    L,a \& L,a           \& R,b \& R, b \& L, a \& R,b                 \\
+                    (           \& (           \& )           \& )           \& ( \& ) \\
+                };
+            \end{tikzpicture}
+            \caption{Example of the CYK algorithm for CFG for balanced parentheses}
+        \end{figure}
+    \end{minipage}
+\end{frame}
+
+\begin{frame}
+    \frametitle{N-dimensional CFGs}
+    \cite{schlesinger2013ten} proposed an extension of CFGs and CYK for N dimensional case. We can try to use it
+    for connectomics:
+    \begin{itemize}
+        \item To check the structural validity of the predictions
+        \item For refining / training: let's make a stochastic grammar and in a case of fail backtrace to
+              voxels that broke the structure and correct them
+    \end{itemize}
+    \begin{alertblock}{Problem of intractablility}
+        The main problem in this regard is to come up with grammar for connectomics, because the
+        number of rules grows very fast with increasing an input size
+    \end{alertblock}
+\end{frame}
 
 \section*{Conclusion}
 
