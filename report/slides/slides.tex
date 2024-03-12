@@ -5,6 +5,7 @@
 \usepackage{graphicx}
 \usepackage{multicol}
 \usepackage{multirow}
+\usepackage{array}
 
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows}
@@ -49,6 +50,8 @@
 \setbeamertemplate{bibliography entry title}{}
 \setbeamertemplate{bibliography entry location}{}
 \setbeamertemplate{bibliography entry note}{}
+
+\newcommand{\fall}[1]{\quad \textcolor{red}{#1}}
 
 % Metadata
 % ------------------------
@@ -212,13 +215,142 @@
 \section{Methodology}
 
 \begin{frame}
-    \frametitle{}
+    \frametitle{The generall explanation of the approach}
     \begin{block}{The main idea}
         Instead of segmenting a whole input volume let's predict only the center voxel.
     \end{block}
 \end{frame}
 
 \section{Experiments}
+
+\begin{frame}
+    \frametitle{Voxelwise models evaluation}
+    \begin{table}[ht]
+        \centering
+        \begin{tabular}{|c|c|c|c|c|c| }
+            \hline
+            \textbf{Model}                 & \textbf{Features} & \textbf{F1}    & \textbf{AP}    & \( \mathbf{\varkappa} \) \\
+            \hline
+            \multirow{2}{*}{Decision tree} & 1                 & 0.278          & 0.345          & 0.656                    \\
+                                           & 8                 & 0.317          & 0.261          & 0.584                    \\
+            \hline
+            \multirow{2}{*}{Random forest}
+                                           & 1                 & 0.278          & 0.345          & 0.655                    \\
+                                           & 8                 & \textbf{0.319} & 0.315          & 0.618                    \\
+            \hline
+            \multirow{2}{*}{AdaBoost}
+                                           & 1                 & 0.277          & 0.219          & 0.654                    \\
+                                           & 8                 & 0.281          & 0.212          & \textbf{0.671}           \\
+            \hline
+            \multirow{2}{*}{GradientBoost}
+                                           & 1                 & 0.278          & 0.346          & 0.656                    \\
+                                           & 8                 & 0.282          & \textbf{0.355} & 0.676                    \\
+            \hline
+        \end{tabular}
+        \caption{Metrics for voxelwise models}
+        \label{tab:voxelwise_metrics}
+    \end{table}
+\end{frame}
+
+\begin{frame}
+    \frametitle{CNN models evaluation}
+    \begin{table}[ht]
+        \centering
+        \begin{tabular}{|p{1.2cm}| >{\centering\arraybackslash}p{1cm}|c|c|c|c|c|}
+            \hline
+            \textbf{Model} & \textbf{Input shape} & \textbf{Loss}          & \textbf{F1}    & \textbf{AP}    & \( \mathbf{\varkappa} \) \\
+            \hline
+            4res           & 32                   & CE                     & \textbf{0.913} & \textbf{0.962} & \textbf{0.939}           \\
+            \hline
+            4conv          & 32                   & CE                     & 0.906          & 0.952          & 0.938                    \\
+            \hline
+            4res\_ln       & 32                   & CE                     & 0.905          & 0.959          & 0.937                    \\
+            \hline
+            dil            & 32                   & CE                     & 0.885          & 0.95           & 0.923                    \\
+            \hline
+            4res           & 16                   & CE                     & 0.883          & 0.933          & 0.926                    \\
+            \hline
+            4res\_ln       & 16                   & CE                     & 0.851          & 0.925          & 0.918                    \\
+            \hline
+            dil            & 32                   & Focal (\(\gamma = 2\)) & 0.828          & 0.886          & 0.894                    \\
+            \hline
+        \end{tabular}
+        \caption{Metrics for top 7 CNN models}
+        \label{tab:cnn_raw_metrics}
+    \end{table}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Efficiency of pretraining}
+    \begin{table}[ht]
+        \centering
+        \begin{tabular}{|c| >{\centering\arraybackslash}p{1cm}|c|c|c| }
+            \hline
+            \textbf{Model}            & \textbf{Pretr. type} & \textbf{Input shape} & \textbf{Loss} & \textbf{F1}    \\
+            \hline
+            \multirow{3}{*}{ConvNext} & CR1                  & \multirow{3}{*}{32}  & CE            & \textbf{0.741} \\
+                                      & CR0                  &                      & CE            & 0.682          \\
+                                      & -                    &                      & CE            & 0.701          \\
+            \hline
+            \multirow{3}{*}{ConvNext} & CR0                  & \multirow{3}{*}{32 } & Focal2        & \textbf{0.687} \\
+                                      & -                    &                      & Focal2        & 0.531          \\
+                                      & -                    &                      & Focal4        & 0.492          \\
+            \hline
+            \multirow{2}{*}{ConvNext} & CR1                  & \multirow{2}{*}{16 } & CE            & 0.603          \\
+                                      & -                    &                      & CE            & \textbf{0.728} \\
+            \hline
+        \end{tabular}
+        \caption{Comparison of ConvNext models with and without pretraining. CR\(N\) means center voxel regression
+            with padding equals to \(N\) and
+            Focal\(A\) means the Focal Loss with \( \gamma = A \).}
+        \label{tab:pretraining_comparison}
+    \end{table}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Quality of postprocessing: metrics}
+    \begin{table}[ht]
+        \centering
+        \begin{tabular}{|p{1.2cm}| >{\centering\arraybackslash}p{1cm}|c|c|c|c|}
+            \hline
+            \textbf{Model} & \textbf{Input shape} & \textbf{Loss}          & \textbf{F1}                      & \( \mathbf{\varkappa} \)     \\
+            \hline
+            4res           & 32                   & CE                     & 0.901 \fall{-0.012}              & \textbf{0.937} \fall{-0.002} \\
+            \hline
+            4conv          & 32                   & CE                     & \textbf{0.902} \fall{-0.004}     & 0.935 \fall{-0.003}          \\
+            \hline
+            4res\_ln       & 32                   & CE                     & 0.897  \fall{-0.008}             & 0.930 \fall{-0.007}          \\
+            \hline
+            dil            & 32                   & CE                     & 0.828  \fall{-0.057}             & 0.868 \fall{-0.064}          \\
+            \hline
+            4res           & 16                   & CE                     & 0.878  \fall{-0.005}             & 0.922 \fall{-0.004}          \\
+            \hline
+            4res\_ln       & 16                   & CE                     & 0.846  \fall{-0.005}             & 0.916  \fall{-0.002}         \\
+            \hline
+            dil            & 32                   & Focal (\(\gamma = 2\)) & 0.828  \quad \textcolor{gray}{0} & 0.893  \fall{-0.001}         \\
+            \hline
+        \end{tabular}
+        \caption{Metrics for postprpocesed outputs of top 7 CNN models. The difference with
+            metrics for raw prediction are denoted right of the metric values}
+        \label{tab:cnn_crf_metrics}
+    \end{table}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Quality of postprocessing: biological structures}
+    \begin{minipage}{0.49\textwidth}
+        \begin{figure}
+            \includegraphics[width=0.9\textwidth]{raw_pred.png}
+            \caption{raw predictions}
+        \end{figure}
+    \end{minipage}
+    \begin{minipage}{0.49\textwidth}
+        \begin{figure}
+            \includegraphics[width=0.9\textwidth]{crf_pred.png}
+            \caption{CRF postprpocesed}
+        \end{figure}
+    \end{minipage}
+\end{frame}
 
 \section{Directions of further research}
 
