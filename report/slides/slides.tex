@@ -1,0 +1,100 @@
+\documentclass{beamer}
+\usetheme{Madrid}
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{multicol}
+\usepackage{multirow}
+
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows}
+\usetikzlibrary{calc}
+
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+\pgfplotsset{
+    report_style/.style={
+    legend style={draw=none, font=\small},
+    legend cell align=left,
+    legend pos=north east,
+    ylabel style={align=center, font=\bfseries\boldmath},
+    xlabel style={align=center, font=\bfseries\boldmath},
+    x tick label style={font=\bfseries\boldmath},
+    y tick label style={font=\bfseries\boldmath},
+    scaled ticks=false,
+    every axis plot/.append style={thick},
+    },
+}
+
+\usepackage[justification=centering]{caption}
+\usepackage{subcaption}
+
+\usepackage{xurl}
+
+% default path to images and other assets
+\graphicspath{{../assets/}}
+
+% disable wrapping
+\tolerance=1
+\emergencystretch=\maxdimen
+\hyphenpenalty=10000
+\hbadness=10000
+
+% number figure caption
+\setbeamertemplate{caption}[numbered]
+
+% display bib label in references
+\setbeamertemplate{bibliography item}{\insertbiblabel}
+\setbeamertemplate{bibliography entry title}{}
+\setbeamertemplate{bibliography entry location}{}
+\setbeamertemplate{bibliography entry note}{}
+
+% Metadata
+% ------------------------
+\title[Connectomics segmentation]{Segmentation of 3D volume images for connectomics}
+\subtitle{CMS Research project}
+
+\author[Oleh Shkalikov]{Oleh Shkalikov\texorpdfstring{ (5102818)
+\\[0.7em]{\small Supervisors: Jannik Irmai, David Stein}
+\\{\small Chairholder: Prof. Dr. Bjoern Andres}}{}}
+
+\institute[TU Dresden]{TU Dresden, Computer Science Faculty}
+
+\date{14 March, 2023}
+
+\begin{document}
+
+\frame{\titlepage}
+
+% \begin{frame}
+%     \frametitle{Agenda}
+%     \tableofcontents
+% \end{frame}
+
+\section{Dataset description and analysis}
+\begin{frame}
+    \frametitle{The original dataset}
+
+    \cite{lucchi2013learning,lucchi2011supervoxel}
+\end{frame}
+
+\section{Methodology}
+
+\section{Experiments}
+
+\section{Directions of further research}
+
+\section*{Conclusion}
+
+\section*{References}
+
+\begin{frame}[allowframebreaks]
+    \frametitle{References}
+
+    \bibliographystyle{apalike}
+    \bibliography{../references.bib}
+\end{frame}
+
+
+\end{document}
