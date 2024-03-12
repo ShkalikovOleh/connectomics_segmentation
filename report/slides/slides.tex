@@ -10,7 +10,7 @@
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows}
 \usetikzlibrary{calc}
-\usetikzlibrary{matrix}
+\usetikzlibrary{matrix, positioning}
 
 \tikzstyle{matrix of math nodes}=[
   matrix of nodes,
@@ -230,15 +230,78 @@
 \section{Methodology}
 
 \begin{frame}
-    \frametitle{The generall explanation of the approach}
-    \begin{block}{The main idea}
-        Instead of segmenting a whole input volume let's predict only the center voxel.
-    \end{block}
+    \frametitle{Voxelwise classification models}
+
+    First of all we evaluate classical ML models where input subvolumes represent only 1 voxel which model should classify
+    \linebreak
+
+    \begin{minipage}[t]{0.49\textwidth}
+        We use the following ML models:
+        \begin{itemize}
+            \item Decision tree
+            \item Random forest
+            \item Ada boosting on trees
+            \item Gradient boosting on trees
+        \end{itemize}
+    \end{minipage}
+    \begin{minipage}[t]{0.49\textwidth}
+        In addition to intensities we add features computed by filtering and input slice such as:
+        \begin{itemize}
+            \item Sobel's \(x \) and \(y\) derivatives
+            \item Prewitt's \(x \) and \(y\) derivatives
+            \item Laplace
+            \item Gradient magnitudes from sobel and prewitt gradients
+        \end{itemize}
+    \end{minipage}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Convolutional neural networks}
+
+    \begin{minipage}{0.49\textwidth}
+        CNN are SOTA models for task like this because they have 2 important advantages over classical models:
+        \begin{enumerate}
+            \item Downsampling layers reduce dimensionality of features
+            \item They learn features and we don't need to invent them by hand
+        \end{enumerate}
+
+        All our 6 types of CNNs architectures differ only in backbones.
+    \end{minipage}
+    \begin{minipage}{0.49\textwidth}
+        \begin{figure}
+            \begin{tikzpicture}[
+                    module/.style={draw, very thick, rounded corners, minimum
+                            width=15ex},
+                    conv/.style={module, minimum height = 0.85cm, fill=red!20},
+                    norm/.style={module, minimum height = 0.85cm, fill=orange!20},
+                    act/.style={module, minimum height = 0.85cm, fill=cyan!20},
+                    arrow/.style={-stealth', thick, rounded corners},
+                ]
+
+                \node[conv, align=center] (conv_layer) {3D \\ convolution};
+                \node[above=of conv_layer, norm, align=center] (norm_layer) {Norm\\layer};
+                \node[above=of norm_layer, act, align=center] (activation) {Activation};
+
+                \draw[arrow] (conv_layer) -- (norm_layer);
+                \draw[arrow] (norm_layer) -- (activation);
+            \end{tikzpicture}
+            \caption{Convolutional block}
+            \label{fig:conv_block}
+        \end{figure}
+    \end{minipage}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Handcrafted CNN backbones}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Handcrafted CNN backbones}
 \end{frame}
 
 \begin{frame}
     \frametitle{ConvNext}
-    We took a SOTA 2D CNN ConvNext\cite{liu2022convnet} and change 2D convolutions with 3D.
+    We took a SOTA 2D CNN ConvNext \cite{liu2022convnet} and change 2D convolutions with 3D.
     \begin{figure}
         \includegraphics[width=0.8\textwidth]{convnext.png}
         \caption{ConvNext-tiny architecture\footnote{Image source: \url{https://www.researchgate.net/figure/A-ConvNeXt-Tiny-overall-network-structure-B-ConvNeXt-Block-structure_fig2_367224906}}}
@@ -256,7 +319,7 @@
     \frametitle{Tiled predictions}
 
     \begin{block}{Motivation}
-        Predictions for adjacent center voxels shares almost a big percent of data. Can we use
+        Predictions for adjacent center voxels share a lot of input data. Can we use
         properties of convolution to reduce number of computation?
     \end{block}
 
@@ -264,7 +327,7 @@
         \begin{figure}
             \includegraphics[height=3cm]{conv1.png}
             \includegraphics[height=3cm]{conv2.png}
-            \caption{Convolution visualization}
+            \caption{Convolution visualization\footnote{Images source: \url{https://towardsdatascience.com/types-of-convolutions-in-deep-learning-717013397f4d}}}
         \end{figure}
     \end{minipage}
     \begin{minipage}{0.49\textwidth}
