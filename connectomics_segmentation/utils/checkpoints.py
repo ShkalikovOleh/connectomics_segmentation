@@ -9,17 +9,24 @@ def load_pretrained_backbone(
 ) -> nn.Module:
     ckpt = torch.load(ckpt_path)
     is_vae = any(
-        map(lambda k: k.startswith("model.decoder"), ckpt["state_dict"].keys())
+        map(
+            lambda k: k.startswith("model.decoder")
+            or k.startswith("model._orig_mod.decoder"),
+            ckpt["state_dict"].keys(),
+        )
     )
 
     has_orig_prefix = any(map(lambda k: "_orig_mod" in k, ckpt["state_dict"].keys()))
 
     if is_vae:
-        backbone_prefix = "model.encoder."
+        if has_orig_prefix:
+            backbone_prefix = "model._orig_mod.encoder."
+        else:
+            backbone_prefix = "model.encoder."
     else:
         backbone_prefix = "backbone_model."
-    if has_orig_prefix:
-        backbone_prefix += "_orig_mod."
+        if has_orig_prefix:
+            backbone_prefix += "_orig_mod."
     back_key_shift = len(backbone_prefix)
 
     backbone_state_dict = {}
@@ -34,11 +41,12 @@ def load_pretrained_backbone(
     backbone_model.load_state_dict(backbone_state_dict)
 
     if load_vae_mean_head:
-        weights_key = "model.mean_head.weight"
-        bias_key = "model.mean_head.bias"
         if has_orig_prefix:
-            weights_key += "_orig_mod."
-            bias_key += "_orig_mod."
+            weights_key = "model._orig_mod.mean_head.weight"
+            bias_key = "model._orig_mod.mean_head.bias"
+        else:
+            weights_key = "model.mean_head.weight"
+            bias_key = "model.mean_head.bias"
 
         mean_head_w = ckpt["state_dict"][weights_key]
         mean_head_b = ckpt["state_dict"][bias_key]
