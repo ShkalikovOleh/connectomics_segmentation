@@ -26,6 +26,13 @@
   }
 ]
 
+\tikzstyle{module}=[draw, very thick, rounded corners, minimum height=14ex]
+\tikzstyle{conv}=[module, minimum width = 0.8cm, fill=red!20]
+\tikzstyle{mpool}=[module, minimum width = 0.8cm, fill=orange!20]
+\tikzstyle{apool}=[module, minimum width = 0.8cm, fill=cyan!20]
+\tikzstyle{res}=[module, minimum width = 0.8cm, fill=green!20]
+\tikzstyle{arrow}=[-stealth', thick, rounded corners]
+
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 
@@ -293,10 +300,92 @@
 
 \begin{frame}
     \frametitle{Handcrafted CNN backbones}
+    \begin{figure}
+        \begin{tikzpicture}[node distance=0.5cm]
+            \node[conv, align=center] (conv_layer1) {\rotatebox{90}{ConvBlock}};
+            \node[right=of conv_layer1, conv, align=center] (conv_layer2) {\rotatebox{90}{ConvBlock}};
+            \node[right=of conv_layer2, conv, align=center] (conv_layer3) {\rotatebox{90}{ConvBlock}};
+            \node[right=of conv_layer3, apool, align=center] (avg_pool) {\rotatebox{90}{AvgPool}};
+
+            \draw[arrow] (conv_layer1) -- (conv_layer2);
+            \draw[arrow] (conv_layer2) -- (conv_layer3);
+            \draw[arrow] (conv_layer3) -- (avg_pool);
+        \end{tikzpicture}
+        \caption{\textit{3layer} architecture. Kernel sizes are \( 3 \times 3 \times 3 \), strides are \( 1 \),
+            activations are ReLU and an input shape is \( 8 \times 8 \times 8 \)}
+    \end{figure}
+
+    \begin{figure}
+        \begin{tikzpicture}[node distance=0.5cm]
+            \node[conv, align=center] (conv_layer1) {\rotatebox{90}{ConvBlock}};
+            \node[right=of conv_layer1, mpool, align=center] (max_pool1) {\rotatebox{90}{MaxPool}};
+            \node[right=of max_pool1, conv, align=center] (conv_layer2) {\rotatebox{90}{ConvBlock}};
+            \node[right=of conv_layer2, mpool, align=center] (max_pool2) {\rotatebox{90}{MaxPool}};
+            \node[right=of max_pool2, conv, align=center] (conv_layer3) {\rotatebox{90}{ConvBlock}};
+            \node[right=of conv_layer3, conv, align=center] (conv_layer4) {\rotatebox{90}{ConvBlock}};
+            \node[right=of conv_layer4, apool, align=center] (avg_pool) {\rotatebox{90}{AvgPool}};
+
+            \draw[arrow] (conv_layer1) -- (max_pool1);
+            \draw[arrow] (max_pool1) -- (conv_layer2);
+            \draw[arrow] (conv_layer2) -- (max_pool2);
+            \draw[arrow] (max_pool2) -- (conv_layer3);
+            \draw[arrow] (conv_layer3) -- (conv_layer4);
+            \draw[arrow] (conv_layer4) -- (avg_pool);
+        \end{tikzpicture}
+        \caption{\textit{4conv} architecture. Kernel sizes are \( 3 \times 3 \times 3 \), strides are \( 1 \),
+            activations are GELU and an input shape is \( 32 \times 32 \times 32 \)}
+    \end{figure}
 \end{frame}
 
 \begin{frame}
     \frametitle{Handcrafted CNN backbones}
+    \begin{figure}
+        \begin{tikzpicture}[node distance=0.3cm]
+            \node[conv, align=center] (conv_layer1) {\rotatebox{90}{ConvBlock}};
+            \node[right=of conv_layer1, mpool, align=center] (max_pool1) {\rotatebox{90}{MaxPool}};
+            \node[right=of max_pool1, conv, align=center] (conv_layer2) {\rotatebox{90}{ConvBlock}};
+            \node[right=of conv_layer2, res, align=center] (res_layer2) {\rotatebox{90}{ResBlock}};
+            \node[right=of res_layer2, mpool, align=center] (max_pool2) {\rotatebox{90}{MaxPool}};
+            \node[right=of max_pool2, conv, align=center] (conv_layer3) {\rotatebox{90}{ConvBlock}};
+            \node[right=of conv_layer3, res, align=center] (res_layer3) {\rotatebox{90}{ResBlock}};
+            \node[right=of res_layer3, mpool, align=center] (max_pool3) {\rotatebox{90}{MaxPool}};
+            \node[right=of max_pool3, conv, align=center] (conv_layer4) {\rotatebox{90}{ConvBlock}};
+            \node[right=of conv_layer4, res, align=center] (res_layer4) {\rotatebox{90}{ResBlock}};
+            \node[right=of res_layer4, apool, align=center] (avg_pool) {\rotatebox{90}{AvgPool}};
+
+            \draw[arrow] (conv_layer1) -- (max_pool1);
+            \draw[arrow] (max_pool1) -- (conv_layer2);
+            \draw[arrow] (conv_layer2) -- (res_layer2);
+            \draw[arrow] (res_layer2) -- (max_pool2);
+            \draw[arrow] (max_pool2) -- (conv_layer3);
+            \draw[arrow] (conv_layer3) -- (res_layer3);
+            \draw[arrow] (res_layer3) -- (max_pool3);
+            \draw[arrow] (max_pool3) -- (conv_layer4);
+            \draw[arrow] (conv_layer4) -- (res_layer4);
+            \draw[arrow] (res_layer4) -- (avg_pool);
+        \end{tikzpicture}
+        \caption{\textit{4res} architecture. Kernel sizes are \( 3 \times 3 \times 3 \), paddings are \( 1 \),
+            activations are GELU and an input shapes are \( 32 \times 32 \times 32 \) or \( 16 \times 16 \times 16 \)}
+    \end{figure}
+    \begin{figure}
+        \begin{tikzpicture}[node distance=0.6cm]
+            \node[align=center] (input) {x};
+            \node[right=of input, conv, align=center] (conv_layer1) {\rotatebox{90}{ConvBlock}};
+            \node[right=of conv_layer1, conv, align=center] (conv_layer2) {\rotatebox{90}{ConvBlock}};
+            \node[right=of conv_layer2, draw, thick, circle] (res_op){$+$};
+
+            \draw[arrow] (input) -- (conv_layer1);
+            \draw[arrow] (conv_layer1) -- (conv_layer2);
+            \draw[arrow] (conv_layer2) -- (res_op);
+            \draw[arrow] (input) -- ++(0, 1.4cm) -| (res_op);
+        \end{tikzpicture}
+        \caption{ResNet block of the \textit{4res} architecture}
+    \end{figure}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Handcrafted CNN backbones}
+
 \end{frame}
 
 \begin{frame}
@@ -394,11 +483,11 @@
             \hline
             \multirow{2}{*}{AdaBoost}
                                            & 1                 & 0.277          & 0.219          & 0.654                    \\
-                                           & 8                 & 0.281          & 0.212          & \textbf{0.671}           \\
+                                           & 8                 & 0.281          & 0.212          & 0.671                    \\
             \hline
             \multirow{2}{*}{GradientBoost}
                                            & 1                 & 0.278          & 0.346          & 0.656                    \\
-                                           & 8                 & 0.282          & \textbf{0.355} & 0.676                    \\
+                                           & 8                 & 0.282          & \textbf{0.355} & \textbf{0.676}           \\
             \hline
         \end{tabular}
         \caption{Metrics for voxelwise models}
