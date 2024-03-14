@@ -385,7 +385,28 @@
 
 \begin{frame}
     \frametitle{Handcrafted CNN backbones}
+    \begin{figure}
+        \begin{tikzpicture}[node distance=0.6cm]
+            \node[conv, align=center] (conv_layer1) {\rotatebox{90}{ConvBlock}};
+            \node[right=of conv_layer1, mpool, dashed, align=center] (max_pool1) {\rotatebox{90}{MaxPool}};
+            \node[right=of max_pool1, yshift=1.75cm, conv, fill=brown!20, align=center] (conv_layer21) {\rotatebox{90}{\parbox[c]{1.5cm}{\centering ConvBlock \scriptsize kernel 3}}};
+            \node[right=of conv_layer21, conv, fill=brown!20, align=center] (conv_layer31) {\rotatebox{90}{\parbox[c]{1.5cm}{\centering ConvBlock \scriptsize kernel 3}}};
+            \node[right=of max_pool1, xshift=0.75cm, yshift=-1.75cm, conv, fill=brown!20, align=center] (conv_layer22) {\rotatebox{90}{\parbox[c]{1.5cm}{\centering ConvBlock \scriptsize kernel 5}}};
+            \node[right=of max_pool1, xshift=3cm, align=center] (concat) {\rotatebox{90}{concat}};
+            \node[right=of concat, apool, align=center] (avg_pool) {\rotatebox{90}{AvgPool}};
 
+            \draw[arrow] (conv_layer1) -- (max_pool1);
+            \draw[arrow] (max_pool1) |- (conv_layer21);
+            \draw[arrow] (max_pool1) |- (conv_layer22);
+            \draw[arrow] (conv_layer21) -- (conv_layer31);
+            \draw[arrow] (conv_layer31) -| (concat);
+            \draw[arrow] (conv_layer22) -| (concat);
+            \draw[arrow] (concat) -- (avg_pool);
+        \end{tikzpicture}
+        \caption{\textit{dil} architectures. \textcolor{brown!50}{Conv blocks} in the middle have dilation 3,
+            activations are ReLU and an input shapes are \( 32 \times 32 \times 32 \) or \( 16 \times 16 \times 16 \)
+            (in this case max pooling is omitted)}
+    \end{figure}
 \end{frame}
 
 \begin{frame}
@@ -651,13 +672,13 @@
 
     \begin{itemize}
         \item[$\blacksquare$] Using of CNNs is reasonable
-        \item[$\blacksquare$] Relatively small residual networks works better than bigger models
+        \item[$\blacksquare$] Relatively small residual networks work better than bigger models
         \item[$\blacksquare$] The optimal input shape for used models is \( 32 \times 32 \times 32 \)
-        \item[$\blacksquare$] Postprocessing with CRF improves the structural property of predictions
-        \item[$\blacksquare$] The computed metrics can not represent real quality of models because of
+        \item[$\blacksquare$] The postprocessing with use of CRF improves the structural property of predictions
+        \item[$\blacksquare$] The computed metrics may not represent a real quality of models because of
               unlabeled regions in the dataset
-        \item[$\blacksquare$] Segmentation can benefit from involving structural properties of connectomics
-              into labeling pipeline
+        \item[$\blacksquare$] Structural properties of connectomics
+              can help us improve the quality of segmentation
     \end{itemize}
 
 \end{frame}
